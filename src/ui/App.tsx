@@ -2,20 +2,27 @@ import { useEffect, useState } from 'react'
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
+const ALLOW = new Set(['flavien.guenault@gmail.com','louanedechavanne@gmail.com'])
+
 export default function App() {
   const [ready, setReady] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [denied, setDenied] = useState(false)
   const nav = useNavigate()
   const loc = useLocation()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setUserEmail(data.session?.user.email ?? null)
+      const email = data.session?.user.email ?? null
+      setUserEmail(email)
+      setDenied(!!email && !ALLOW.has(email))
       setReady(true)
       if (!data.session && loc.pathname !== '/login') nav('/login')
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
-      setUserEmail(sess?.user?.email ?? null)
+      const email = sess?.user?.email ?? null
+      setUserEmail(email)
+      setDenied(!!email && !ALLOW.has(email))
       if (!sess) nav('/login')
       else if (loc.pathname === '/login') nav('/')
     })
@@ -23,6 +30,13 @@ export default function App() {
   }, [])
 
   if (!ready) return <div style={{ padding: 16 }}>Chargement…</div>
+  if (denied) return (
+    <div style={{ maxWidth: 600, margin: '20vh auto', textAlign: 'center' }}>
+      <h1>Accès restreint</h1>
+      <p>Cette application est privée. Si tu n'es pas sur la liste autorisée, la connexion est refusée.</p>
+      {userEmail && <button onClick={() => supabase.auth.signOut()}>Se déconnecter ({userEmail})</button>}
+    </div>
+  )
 
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: 12 }}>

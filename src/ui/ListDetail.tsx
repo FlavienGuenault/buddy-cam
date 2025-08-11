@@ -67,7 +67,7 @@ export default function ListDetail() {
   const todos = useMemo(() => items.filter(i => i.status === 'todo'), [items])
 
   function drawRandom() {
-    const pick = pickRandom(todos)
+    const pick = pickRandom<Item>(todos)
     if (!pick) return alert('Aucun élément à tirer.')
     alert(`Tirage → ${pick.title}`)
   }

@@ -12,22 +12,26 @@ export default function App() {
   const loc = useLocation()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const email = data.session?.user.email ?? null
-      setUserEmail(email)
-      setDenied(!!email && !ALLOW.has(email))
-      setReady(true)
-      if (!data.session && loc.pathname !== '/login') nav('/login')
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
-      const email = sess?.user?.email ?? null
-      setUserEmail(email)
-      setDenied(!!email && !ALLOW.has(email))
-      if (!sess) nav('/login')
-      else if (loc.pathname === '/login') nav('/')
-    })
-    return () => sub.subscription.unsubscribe()
+  supabase.auth.getSession().then(({ data }) => {
+    const email = data.session?.user.email ?? null
+    setUserEmail(email)
+    setDenied(!!email && !ALLOW.has(email))
+    setReady(true)
+    // ➜ si déjà connecté et sur /login, on renvoie à l’accueil
+    if (data.session) nav('/')
+    else if (!data.session && loc.pathname !== '/login') nav('/login')
+  })
+  const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+    const email = sess?.user?.email ?? null
+    setUserEmail(email)
+    setDenied(!!email && !ALLOW.has(email))
+    // ➜ dès qu’on a une session, on pousse vers l’accueil (peu importe l’URL)
+    if (sess) nav('/')
+    else nav('/login')
+  })
+  return () => sub.subscription.unsubscribe()
   }, [])
+
 
   if (!ready) return <div style={{ padding: 16 }}>Chargement…</div>
   if (denied) return (

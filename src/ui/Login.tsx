@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useNavigate } from 'react-router-dom'   // 👈
 
 export default function Login() {
   const [mode, setMode] = useState<'password'|'otp'>('password')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [sent, setSent] = useState<string | null>(null)
+  const nav = useNavigate()                      // 👈
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (mode === 'password') {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) alert(error.message)
+      if (error) { alert(error.message); return }
+      nav('/')                                    // 👈 redirection immédiate (basename géré)
       return
     }
     const redirect = new URL(import.meta.env.BASE_URL || '/', window.location.origin).toString()

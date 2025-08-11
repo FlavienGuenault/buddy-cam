@@ -12,7 +12,7 @@ jobs:
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      VITE_TMDB_KEY: ${{ secrets.VITE_TMDB_KEY }}
+      VITE_TMDB_V4: ${{ secrets.VITE_TMDB_V4 }}
       VITE_PARTNER_UID: ${{ secrets.VITE_PARTNER_UID }}
     steps:
       - uses: actions/checkout@v4

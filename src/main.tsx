@@ -7,6 +7,8 @@ import ListDetail from './ui/ListDetail'
 import Login from './ui/Login'
 import About from './ui/About'
 
+const BASENAME = import.meta.env.BASE_URL
+
 const router = createBrowserRouter([
   { path: '/', element: <App />, children: [
     { path: '/', element: <Lists /> },
@@ -14,8 +16,7 @@ const router = createBrowserRouter([
     { path: '/about', element: <About /> }
   ]},
   { path: '/login', element: <Login /> }
-])
-
+], { basename: BASENAME })
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <RouterProvider router={router} />

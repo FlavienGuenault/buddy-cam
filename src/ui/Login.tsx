@@ -6,7 +6,8 @@ export default function Login() {
   const [sent, setSent] = useState<string | null>(null)
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+    const redirect = new URL(import.meta.env.BASE_URL || '/', window.location.origin).toString()
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect } })
     if (error) alert(error.message)
     else setSent(email)
   }

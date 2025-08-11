@@ -12,10 +12,10 @@ export default function MovieSheet({ id, onClose, onDone }:{
   useEffect(()=>{ getMovie(id).then(setM) },[id])
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[2500] grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div className="card max-w-2xl w-full overflow-hidden" onClick={e=>e.stopPropagation()}>
         {m ? (
-          <div className="grid md:grid-cols-[220px,1fr] gap-4">
+          <div className="grid md:grid-cols-[220px,1fr] gap-4 max-h-[80vh] overflow-y-auto p-2">
             <img src={TMDB_IMG(m.poster_path,'w342')} alt="poster" className="rounded-2xl shadow"/>
             <div className="space-y-3">
               <h3 className="text-2xl font-black text-candy-700">{m.title}</h3>
@@ -27,13 +27,13 @@ export default function MovieSheet({ id, onClose, onDone }:{
               </div>
               <textarea className="w-full p-3 rounded-xl border" placeholder="Un mot en sortie de séance…"
                         value={review} onChange={e=>setReview(e.target.value)} />
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2 pt-1 pb-2">
                 <CandyButton onClick={()=>onDone({ rating, review: review||undefined })}>J’ai vu ce film</CandyButton>
                 <CandyButton className="btn-outline" onClick={onClose}>Fermer</CandyButton>
               </div>
             </div>
           </div>
-        ) : (<div>Chargement…</div>)}
+        ) : (<div className="p-6">Chargement…</div>)}
       </div>
     </div>
   )

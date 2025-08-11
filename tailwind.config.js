@@ -4,13 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        candy: { 50:'#fff1f5',100:'#ffe4ec',200:'#ffc9da',300:'#ff99bb',400:'#ff6fa1',
-                 500:'#ff4f8a',600:'#e23d79',700:'#c02f66',800:'#9f2555',900:'#7f1d46' },
-        camellia: '#e11d48',
+        // on garde le nom "candy" pour éviter de réécrire toutes les classes,
+        // mais la palette passe en bordeaux.
+        candy: {
+          50:'#fff1f3',100:'#fde2e7',200:'#fac0cd',300:'#f28aa3',
+          400:'#e75c7d',500:'#b01535',600:'#980f2b',700:'#7d0c23',
+          800:'#64091c',900:'#4e0716'
+        },
         pirate: '#0f172a'
       },
       boxShadow: {
-        candy: '0 10px 20px rgba(255,79,138,.25), 0 6px 6px rgba(255,111,161,.2)'
+        candy: '0 10px 20px rgba(176,21,53,.22), 0 6px 6px rgba(231,92,125,.18)'
       },
       animation: {
         spinSlow: 'spin 4s linear infinite',

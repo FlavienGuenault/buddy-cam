@@ -8,6 +8,13 @@ import MenuSheet from './MenuSheet'
 const ALLOW = new Set(['flavien.guenault@gmail.com','louanedechavanne@gmail.com'])
 const logoUrl = `${import.meta.env.BASE_URL}pwa-192x192.png`
 
+function aliasFromEmail(email?: string|null){
+  if (!email) return null
+  if (email.toLowerCase().startsWith('flavien')) return 'Buddy'
+  if (email.toLowerCase().startsWith('louane')) return 'Camélia'
+  return null
+}
+
 export default function App() {
   const [ready, setReady] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -55,7 +62,11 @@ export default function App() {
             <div className="font-extrabold text-candy-700">Buddy & Cam</div>
           </div>
           <div className="flex items-center gap-2">
-            {userEmail && <span className="text-xs opacity-70 hidden sm:block">{userEmail}</span>}
+            {userEmail && (
+              <span className="text-sm font-semibold text-candy-700">
+                Bonjour {aliasFromEmail(userEmail) ?? userEmail}
+              </span>
+            )}
             <button className="btn-outline px-3 py-1" onClick={()=>setMenuOpen(true)}>☰</button>
           </div>
         </div>

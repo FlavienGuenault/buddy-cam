@@ -13,3 +13,9 @@ body{
 .btn-outline{ @apply bg-white text-candy-600 border-2 border-candy-500 hover:bg-candy-50; }
 .card{ @apply rounded-3xl bg-white/80 backdrop-blur shadow-candy p-4; }
 .tag{ @apply inline-block text-xs px-2 py-0.5 rounded-full bg-candy-100 text-candy-700; }
+
+@keyframes shine {
+  0% { transform: skewX(-12deg) translateX(-120%); }
+  100% { transform: skewX(-12deg) translateX(120%); }
+}
+

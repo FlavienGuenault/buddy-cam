@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
-import Logo from './Logo'
-import CandyButton from './CandyButton'
+
+const logoUrl = `${import.meta.env.BASE_URL}pwa-192x192.png`
 
 export default function Login() {
   const [mode, setMode] = useState<'password'|'otp'>('password')
@@ -16,7 +16,7 @@ export default function Login() {
     if (mode === 'password') {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) { alert(error.message); return }
-      nav('/') // redirection immédiate
+      nav('/')
       return
     }
     const redirect = new URL(import.meta.env.BASE_URL || '/', window.location.origin).toString()
@@ -28,7 +28,7 @@ export default function Login() {
   return (
     <div className="min-h-[75vh] grid place-items-center px-3">
       <div className="card w-full max-w-sm text-center">
-        <Logo className="w-14 h-14 mx-auto mb-2"/>
+        <img src={logoUrl} className="w-16 h-16 mx-auto mb-2" alt="logo"/>
         <h1 className="text-xl font-black text-candy-700">Buddy & Cam</h1>
         <p className="text-sm opacity-70 mb-4">Espace privé</p>
 
@@ -47,7 +47,7 @@ export default function Login() {
           ) : sent ? (
             <p>Un lien a été envoyé à <b>{sent}</b>.</p>
           ) : null}
-          <CandyButton>Se connecter</CandyButton>
+          <button className="btn">Se connecter</button>
         </form>
       </div>
     </div>

@@ -60,11 +60,14 @@ export default function Wheel({ items, onFinish, onClose }:{
         <div className="flex justify-center">
           <button
             onClick={spin}
-            className="px-6 py-3 rounded-full text-white font-black shadow-candy
-                       bg-gradient-to-r from-candy-600 via-candy-500 to-candy-600
-                       animate-[bounceSoft_1s_both] [animation-iteration-count:infinite]"
+            className="relative px-8 py-3 rounded-full text-white font-black shadow-candy
+                      bg-gradient-to-r from-candy-700 via-candy-600 to-candy-700
+                      animate-[bounceSoft_1s_both] [animation-iteration-count:infinite]
+                      overflow-hidden"
           >
-            🎡 Spin Me!
+            <span className="relative z-10">🎡 Spin Me!</span>
+            <span className="absolute inset-0 opacity-40 bg-gradient-to-r from-white/0 via-white/40 to-white/0
+                            -skew-x-12 translate-x-[-120%] animate-[shine_1.8s_infinite]"></span>
           </button>
         </div>
         {winner && <div className="text-center font-bold text-candy-700">🎉 Gagnant : {winner}</div>}

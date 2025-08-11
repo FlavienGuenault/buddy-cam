@@ -31,10 +31,10 @@ export default function Lists() {
             <option value="movies">Films</option>
             <option value="activities">Activités</option>
           </select>
-          <input className="rounded-2xl border px-4 py-3" value={partnerId} onChange={e=>setPartnerId(e.target.value)} placeholder="UID partenaire (optionnel)" />
           <button className="btn w-full">Créer</button>
         </form>
       </section>
+
 
       <section>
         <h2 className="font-bold mb-2">Mes listes</h2>

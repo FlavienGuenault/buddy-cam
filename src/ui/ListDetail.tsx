@@ -4,58 +4,66 @@ import { useParams } from 'react-router-dom'
 import { getList, listItems, addActivityItem, addMovieItem, markDone, updateItem } from '../lib/db'
 import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
-import { getCurrentPosition } from '../lib/geo'
 import { supabase } from '../lib/supabase'
-import CandyButton from './CandyButton'
 import Wheel from './Wheel'
 import MovieSheet from './MovieSheet'
-import MapModal from './MapModal'
+import MapPicker from './MapPicker'
 
-const PARTNER_UID = import.meta.env.VITE_PARTNER_UID as string | undefined
+function whoAmI(email?: string|null): 'Buddy'|'Camélia'|'Autre' {
+  if (!email) return 'Autre'
+  const e = email.toLowerCase()
+  if (e.startsWith('flavien')) return 'Buddy'
+  if (e.startsWith('louane')) return 'Camélia'
+  return 'Autre'
+}
 
 export default function ListDetail() {
   const { id } = useParams()
   const [list, setList] = useState<List | null>(null)
   const [items, setItems] = useState<Item[]>([])
+
+  // création activité
   const [title, setTitle] = useState(''); const [notes, setNotes] = useState('')
 
-  // recherche dynamique
-  const [q, setQ] = useState('')
-  const [suggests, setSuggests] = useState<TmdbMovie[]>([])
-  const [searching, setSearching] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  // recherche film dynamique
+  const [q, setQ] = useState(''); const [suggests, setSuggests] = useState<TmdbMovie[]>([])
+  const [searching, setSearching] = useState(false); const [dropdownOpen, setDropdownOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const debounceRef = useRef<number | undefined>(undefined)
 
+  // UI
   const [attendeesMode, setAttendeesMode] = useState<'nous'|'moi'|'elle'>('nous')
   const [showWheel, setShowWheel] = useState(false)
   const [sheetId, setSheetId] = useState<number|null>(null)
-  const [mapAt, setMapAt] = useState<{lat:number;lng:number}|null>(null)
+  const [editingGeo, setEditingGeo] = useState<Item|null>(null)
+  const [meEmail, setMeEmail] = useState<string|null>(null)
 
+  useEffect(() => { supabase.auth.getUser().then(u => setMeEmail(u.data.user?.email ?? null)) }, [])
   useEffect(() => { if (id) boot(id) }, [id])
   async function boot(listId: string) {
     const l = await getList(listId); setList(l)
     const d = await listItems(listId); setItems(d)
   }
 
-  // suggestions live (debounce + abort) + ouverture du dropdown
+  // recherche live
   useEffect(() => {
+    window.clearTimeout(debounceRef.current)
     if (!q || q.trim().length < 2) { setSuggests([]); setDropdownOpen(false); return }
-    if (abortRef.current) abortRef.current.abort()
-    const ac = new AbortController(); abortRef.current = ac
-    const t = setTimeout(async () => {
-      setSearching(true)
-      try { const r = await searchMovies(q.trim(), ac.signal); setSuggests(r.results ?? []); setDropdownOpen(true) }
+    setSearching(true)
+    debounceRef.current = window.setTimeout(async () => {
+      try { const r = await searchMovies(q.trim()); setSuggests(r.results ?? []); setDropdownOpen(true) }
       catch { /* noop */ }
       finally { setSearching(false) }
     }, 250)
-    return () => { clearTimeout(t); ac.abort() }
+    return () => window.clearTimeout(debounceRef.current)
   }, [q])
 
   useEffect(() => {
-    const close = (e: MouseEvent) => { if (!(e.target as Node)?.isConnected) return; if (!inputRef.current) return
+    const close = (e: MouseEvent) => {
+      if (!inputRef.current) return
       const r = inputRef.current.getBoundingClientRect()
       const x = (e as any).clientX, y = (e as any).clientY
+      // on ferme si on clique loin sous le champ
       if (x<r.left || x>r.right || y<r.top || y>r.bottom+300) setDropdownOpen(false)
     }
     window.addEventListener('click', close)
@@ -75,20 +83,9 @@ export default function ListDetail() {
     setSuggests([]); setQ(''); setDropdownOpen(false)
   }
 
-  async function geotag(item: Item) {
-    try {
-      const pos = await getCurrentPosition()
-      await updateItem(item.id, { location: pos })
-      if (id) setItems(await listItems(id))
-    } catch (e:any) { alert(e.message) }
-  }
-
-  async function toggleDone(item: Item) {
+  async function markAsDone(it: Item, r?:{ rating?:number; review?:string }) {
     const now = new Date().toISOString()
-    const me = (await supabase.auth.getUser()).data.user!
-    const attendees = attendeesMode === 'nous' && PARTNER_UID ? [me.id, PARTNER_UID]
-                    : attendeesMode === 'elle' && PARTNER_UID ? [PARTNER_UID] : [me.id]
-    await markDone(item.id, { when_at: now, attendees, status:'done' })
+    await markDone(it.id, { status:'done', when_at: now, rating: r?.rating ?? null as any, review: r?.review })
     if (id) setItems(await listItems(id))
   }
   async function remise(itemId: string){
@@ -154,16 +151,26 @@ export default function ListDetail() {
                       ✅ {it.when_at?.slice(0,10)} — {it.rating? `${it.rating}/10` : 'sans note'} {it.review? ` — ${it.review}`:''}
                     </div>
                   ) : <div className="text-sm opacity-60">À voir / faire</div>}
+
+                  {/* résumé localisation */}
+                  {it.location && (it.location.buddy || it.location.camelia) && (
+                    <div className="text-xs opacity-70 mt-1">
+                      📍 {it.location.buddy ? `Buddy: ${it.location.buddy.lat.toFixed(2)}, ${it.location.buddy.lng.toFixed(2)}` : 'Buddy: —'}
+                      {' · '}
+                      {it.location.camelia ? `Camélia: ${it.location.camelia.lat.toFixed(2)}, ${it.location.camelia.lng.toFixed(2)}` : 'Camélia: —'}
+                    </div>
+                  )}
+
                   <div className="flex gap-2 mt-2">
                     {it.status==='todo' ? (
-                      <button className="btn" onClick={()=> it.tmdb_id ? setSheetId(it.tmdb_id) : toggleDone(it)}>
+                      <button className="btn" onClick={()=> it.tmdb_id ? setSheetId(it.tmdb_id) : markAsDone(it)}>
                         {it.tmdb_id ? "Voir la fiche" : 'Marquer fait'}
                       </button>
                     ) : (
                       <button className="btn-outline" onClick={()=>remise(it.id)}>Remettre</button>
                     )}
-                    <button className="btn-outline" onClick={()=> it.location? setMapAt(it.location) : geotag(it)}>
-                      {it.location? 'Voir la carte' : 'Géolocaliser'}
+                    <button className="btn-outline" onClick={()=> setEditingGeo(it)}>
+                      Lieux Buddy/Camélia
                     </button>
                   </div>
                 </div>
@@ -175,24 +182,28 @@ export default function ListDetail() {
 
       {showWheel && (
         <Wheel items={items.filter(i=>i.status==='todo').map(i=>({ id:i.id, label:i.title }))}
-          onFinish={()=>{ /* rien, Wheel affiche le gagnant en dessous */ }}
-          onClose={()=>setShowWheel(false)} />
+          onFinish={()=>{}} onClose={()=>setShowWheel(false)} />
       )}
 
       {sheetId && (
-        <MovieSheet id={sheetId} onClose={()=>setSheetId(null)} onDone={async ({ rating, review }: { rating:number; review?:string })=>{
+        <MovieSheet id={sheetId} onClose={()=>setSheetId(null)} onDone={async ({ rating, review })=>{
           const it = items.find(x=>x.tmdb_id===sheetId); if(!it) return
-          const now = new Date().toISOString()
-          const me = (await supabase.auth.getUser()).data.user!
-          const attendees = PARTNER_UID ? [me.id, PARTNER_UID] : [me.id]
-          await markDone(it.id,{ status:'done', when_at:now, rating, review, attendees })
-          if(id) setItems(await listItems(id))
+          await markAsDone(it, { rating, review })
           setSheetId(null)
         }}/>
       )}
 
-      {mapAt && (
-        <MapModal point={mapAt} label={'Buddy & Camélia étaient ici'} onClose={()=>setMapAt(null)}/>
+      {editingGeo && meEmail && (
+        <MapPicker
+          initial={editingGeo.location}
+          who={whoAmI(meEmail) as 'Buddy'|'Camélia'}
+          onClose={()=>setEditingGeo(null)}
+          onSave={async (loc)=>{
+            await updateItem(editingGeo.id, { location: loc })
+            if (id) setItems(await listItems(id))
+            setEditingGeo(null)
+          }}
+        />
       )}
     </div>
   )

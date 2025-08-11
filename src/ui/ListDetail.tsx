@@ -2,16 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getList, listItems, addActivityItem, addMovieItem, markDone, updateItem } from '../lib/db'
 import type { Item, List } from '../lib/types'
-import { searchMovies, type TmdbMovie } from '../lib/tmdb'
+import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
 import { getCurrentPosition } from '../lib/geo'
 import { pickRandom } from '../lib/random'
 import { supabase } from '../lib/supabase'
-
 import CandyButton from './CandyButton'
 import Wheel from './Wheel'
 import MovieSheet from './MovieSheet'
 import MapModal from './MapModal'
-import MoviePoster from './MoviePoster'
 
 const PARTNER_UID = import.meta.env.VITE_PARTNER_UID as string | undefined
 
@@ -38,7 +36,7 @@ export default function ListDetail() {
     const d = await listItems(listId); setItems(d)
   }
 
-  // 🔎 suggestions live avec debounce + AbortController
+  // 🔎 suggestions live avec debounce + AbortController + FIX z-index
   useEffect(() => {
     if (!q || q.trim().length < 2) { setSuggests([]); return }
     if (abortRef.current) abortRef.current.abort()
@@ -65,15 +63,6 @@ export default function ListDetail() {
     setSuggests([]); setQ('')
   }
 
-  async function toggleDone(item: Item) {
-    const now = new Date().toISOString()
-    const me = (await supabase.auth.getUser()).data.user!
-    const attendees = attendeesMode === 'nous' && PARTNER_UID ? [me.id, PARTNER_UID]
-                    : attendeesMode === 'elle' && PARTNER_UID ? [PARTNER_UID] : [me.id]
-    await markDone(item.id, { when_at: now, attendees, status:'done' })
-    if (id) setItems(await listItems(id))
-  }
-
   async function geotag(item: Item) {
     try {
       const pos = await getCurrentPosition()
@@ -82,12 +71,20 @@ export default function ListDetail() {
     } catch (e:any) { alert(e.message) }
   }
 
-  const todos = useMemo(() => items.filter(i => i.status === 'todo'), [items])
-  function drawRandom() {
-    const pick = pickRandom(todos)
-    if (!pick) return alert('Aucun élément à tirer.')
-    alert(`Tirage → ${pick.title}`)
+  async function toggleDone(item: Item) {
+    const now = new Date().toISOString()
+    const me = (await supabase.auth.getUser()).data.user!
+    const attendees = attendeesMode === 'nous' && PARTNER_UID ? [me.id, PARTNER_UID]
+                    : attendeesMode === 'elle' && PARTNER_UID ? [PARTNER_UID] : [me.id]
+    await markDone(item.id, { when_at: now, attendees, status:'done' })
+    if (id) setItems(await listItems(id))
   }
+  async function remise(itemId: string){
+    await updateItem(itemId,{ status:'todo', rating:null, review:null, when_at:null })
+    if (id) setItems(await listItems(id))       // ✅ refresh visible
+  }
+
+  const todos = useMemo(() => items.filter(i => i.status === 'todo'), [items])
 
   if (!list) return <div className="card">Chargement…</div>
 
@@ -122,10 +119,11 @@ export default function ListDetail() {
       {list.type === 'movies' && (
         <section className="card">
           <h3 className="font-bold mb-2">Ajouter un film (TMDb)</h3>
-          <div className="relative">
-            <input className="w-full rounded-2xl border px-4 py-3" value={q} onChange={e=>setQ(e.target.value)} placeholder='Tape pour chercher…' />
+          <div className="relative z-50"> {/* ✅ parent relatif + z élevé */}
+            <input className="w-full rounded-2xl border px-4 py-3"
+                   value={q} onChange={e=>setQ(e.target.value)} placeholder='Tape pour chercher…' />
             {q && (
-              <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-candy max-h-96 overflow-auto z-10">
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-candy max-h-96 overflow-auto z-50">
                 {searching && <div className="px-4 py-2 text-sm opacity-60">Recherche…</div>}
                 {!searching && suggests.length===0 && q.trim().length>=2 && (
                   <div className="px-4 py-2 text-sm opacity-60">Aucun résultat</div>
@@ -149,11 +147,11 @@ export default function ListDetail() {
 
       <section>
         <h3 className="font-bold mb-2">Éléments</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {items.map(it => (
             <div key={it.id} className="card hover:animate-bounceSoft">
               <div className="flex gap-3">
-                {it.tmdb_id ? <MoviePoster id={it.tmdb_id} className="w-20 h-28 object-cover rounded-xl"/> : null}
+                {it.tmdb_id ? <Poster id={it.tmdb_id}/> : null}
                 <div className="flex-1">
                   <div className="font-bold">{it.title}</div>
                   {it.status==='done' ? (
@@ -167,11 +165,9 @@ export default function ListDetail() {
                         {it.tmdb_id ? "Voir la fiche" : 'Marquer fait'}
                       </CandyButton>
                     ) : (
-                      <CandyButton className="btn-outline"
-                        onClick={()=>updateItem(it.id,{ status:'todo', rating:null, review:null, when_at:null })}>Remettre</CandyButton>
+                      <CandyButton className="btn-outline" onClick={()=>remise(it.id)}>Remettre</CandyButton>
                     )}
-                    <CandyButton className="btn-outline"
-                      onClick={()=> it.location? setMapAt(it.location) : geotag(it)}>
+                    <CandyButton className="btn-outline" onClick={()=> it.location? setMapAt(it.location) : geotag(it)}>
                       {it.location? 'Voir la carte' : 'Géolocaliser'}
                     </CandyButton>
                   </div>
@@ -189,7 +185,7 @@ export default function ListDetail() {
       )}
 
       {sheetId && (
-        <MovieSheet id={sheetId} onClose={()=>setSheetId(null)} onDone={async ({rating,review})=>{
+        <MovieSheet id={sheetId} onClose={()=>setSheetId(null)} onDone={async ({ rating, review }: { rating:number; review?:string })=>{
           const it = items.find(x=>x.tmdb_id===sheetId); if(!it) return
           const now = new Date().toISOString()
           const me = (await supabase.auth.getUser()).data.user!
@@ -205,4 +201,11 @@ export default function ListDetail() {
       )}
     </div>
   )
+}
+
+function Poster({ id }:{ id:number }){
+  const [path, setPath] = useState<string | undefined>()
+  useEffect(()=>{ getMovie(id).then(m=>setPath(m.poster_path)).catch(()=>{}) },[id])
+  if (!path) return null
+  return <img src={TMDB_IMG(path,'w185')} className="w-20 h-28 object-cover rounded-xl" alt="poster"/>
 }

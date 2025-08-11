@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getList, listItems, addActivityItem, addMovieItem, markDone, updateItem } from '../lib/db'
 import type { Item, List } from '../lib/types'
@@ -7,18 +7,30 @@ import { getCurrentPosition } from '../lib/geo'
 import { pickRandom } from '../lib/random'
 import { supabase } from '../lib/supabase'
 
+import CandyButton from './CandyButton'
+import Wheel from './Wheel'
+import MovieSheet from './MovieSheet'
+import MapModal from './MapModal'
+import MoviePoster from './MoviePoster'
+
 const PARTNER_UID = import.meta.env.VITE_PARTNER_UID as string | undefined
 
 export default function ListDetail() {
   const { id } = useParams()
   const [list, setList] = useState<List | null>(null)
   const [items, setItems] = useState<Item[]>([])
-  const [title, setTitle] = useState('')
-  const [notes, setNotes] = useState('')
+  const [title, setTitle] = useState(''); const [notes, setNotes] = useState('')
+
+  // recherche dynamique
   const [q, setQ] = useState('')
-  const [results, setResults] = useState<TmdbMovie[]>([])
-  const [loading, setLoading] = useState(false)
+  const [suggests, setSuggests] = useState<TmdbMovie[]>([])
+  const [searching, setSearching] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
+
   const [attendeesMode, setAttendeesMode] = useState<'nous'|'moi'|'elle'>('nous')
+  const [showWheel, setShowWheel] = useState(false)
+  const [sheetId, setSheetId] = useState<number|null>(null)
+  const [mapAt, setMapAt] = useState<{lat:number;lng:number}|null>(null)
 
   useEffect(() => { if (id) boot(id) }, [id])
   async function boot(listId: string) {
@@ -26,33 +38,39 @@ export default function ListDetail() {
     const d = await listItems(listId); setItems(d)
   }
 
+  // 🔎 suggestions live avec debounce + AbortController
+  useEffect(() => {
+    if (!q || q.trim().length < 2) { setSuggests([]); return }
+    if (abortRef.current) abortRef.current.abort()
+    const ac = new AbortController(); abortRef.current = ac
+    const t = setTimeout(async () => {
+      setSearching(true)
+      try { const r = await searchMovies(q.trim(), ac.signal); setSuggests(r.results ?? []) }
+      catch { /* noop */ }
+      finally { setSearching(false) }
+    }, 250)
+    return () => { clearTimeout(t); ac.abort() }
+  }, [q])
+
   async function addActivity(e: React.FormEvent) {
     e.preventDefault(); if (!id) return
     await addActivityItem(id, title.trim(), notes.trim() || undefined)
     setTitle(''); setNotes('');
     setItems(await listItems(id))
   }
-
-  async function onSearch(e: React.FormEvent) {
-    e.preventDefault(); setLoading(true)
-    try { const r = await searchMovies(q.trim()); setResults(r.results ?? []) }
-    finally { setLoading(false) }
-  }
-
   async function addMovie(m: TmdbMovie) {
     if (!id) return
     await addMovieItem(id, m.id, m.title)
     setItems(await listItems(id))
+    setSuggests([]); setQ('')
   }
 
   async function toggleDone(item: Item) {
     const now = new Date().toISOString()
     const me = (await supabase.auth.getUser()).data.user!
-    const attendees = attendeesMode === 'nous' && PARTNER_UID ? [me.id, PARTNER_UID] : attendeesMode === 'elle' && PARTNER_UID ? [PARTNER_UID] : [me.id]
-    const ratingStr = window.prompt('Note sur 10 (optionnel)')
-    const review = window.prompt('Un mot sur cette activité/ce film ? (optionnel)') || undefined
-    const rating = ratingStr ? Math.max(1, Math.min(10, parseInt(ratingStr))) : undefined
-    await markDone(item.id, { when_at: now, rating, review, attendees })
+    const attendees = attendeesMode === 'nous' && PARTNER_UID ? [me.id, PARTNER_UID]
+                    : attendeesMode === 'elle' && PARTNER_UID ? [PARTNER_UID] : [me.id]
+    await markDone(item.id, { when_at: now, attendees, status:'done' })
     if (id) setItems(await listItems(id))
   }
 
@@ -65,96 +83,126 @@ export default function ListDetail() {
   }
 
   const todos = useMemo(() => items.filter(i => i.status === 'todo'), [items])
-
   function drawRandom() {
-    const pick = pickRandom<Item>(todos)
+    const pick = pickRandom(todos)
     if (!pick) return alert('Aucun élément à tirer.')
     alert(`Tirage → ${pick.title}`)
   }
 
-  if (!list) return <div>Chargement…</div>
+  if (!list) return <div className="card">Chargement…</div>
 
   return (
-    <div style={{ display:'grid', gap:12 }}>
-      <header style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <h2>{list.name} <small style={{ opacity:.6, fontWeight:400 }}>({list.type})</small></h2>
-        {list.type === 'movies' && (
-          <button onClick={drawRandom}>🎲 Tirer au sort</button>
-        )}
+    <div className="grid gap-4">
+      <header className="flex justify-between items-center">
+        <h2 className="text-2xl font-black text-candy-700">{list.name} <small className="opacity-60 font-normal">({list.type})</small></h2>
+        {list.type === 'movies' && <CandyButton className="btn-outline" onClick={()=>setShowWheel(true)}>🎡 Roue</CandyButton>}
       </header>
 
-      <section style={{ display:'flex', gap:12, alignItems:'center' }}>
-        <label>Présence :</label>
-        <select value={attendeesMode} onChange={e=>setAttendeesMode(e.target.value as any)}>
+      <section className="flex gap-3 items-center">
+        <span className="text-sm opacity-70">Présence :</span>
+        <select className="rounded-xl border px-2 py-1"
+          value={attendeesMode} onChange={e=>setAttendeesMode(e.target.value as any)}>
           <option value='nous'>Nous deux</option>
           <option value='moi'>Moi</option>
-          <option value='elle'>Elle/Lui (partenaire)</option>
+          <option value='elle'>Camélia/Buddy seul·e</option>
         </select>
       </section>
 
       {list.type === 'activities' && (
-        <section style={{ border:'1px solid #eee', borderRadius:8, padding:12 }}>
-          <h3>Nouvelle activité</h3>
-          <form onSubmit={addActivity} style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder='Titre' required />
-            <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder='Notes (optionnel)' />
-            <button>Ajouter</button>
+        <section className="card">
+          <h3 className="font-bold mb-2">Nouvelle activité</h3>
+          <form onSubmit={addActivity} className="flex gap-2 flex-wrap">
+            <input className="rounded-2xl border px-3 py-2" value={title} onChange={e=>setTitle(e.target.value)} placeholder='Titre' required />
+            <input className="rounded-2xl border px-3 py-2 min-w-[240px]" value={notes} onChange={e=>setNotes(e.target.value)} placeholder='Notes (optionnel)' />
+            <CandyButton>Ajouter</CandyButton>
           </form>
         </section>
       )}
 
       {list.type === 'movies' && (
-        <section style={{ border:'1px solid #eee', borderRadius:8, padding:12 }}>
-          <h3>Ajouter un film (TMDb)</h3>
-          <form onSubmit={onSearch} style={{ display:'flex', gap:8 }}>
-            <input value={q} onChange={e=>setQ(e.target.value)} placeholder='Rechercher…' />
-            <button disabled={loading}>{loading ? '…' : 'Rechercher'}</button>
-          </form>
-          <ul style={{ listStyle:'none', padding:0, marginTop:8 }}>
-            {results.slice(0,8).map(m => (
-              <li key={m.id} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px dotted #eee' }}>
-                <span>{m.title} {m.release_date ? `(${m.release_date.slice(0,4)})` : ''}</span>
-                <button onClick={()=>addMovie(m)}>Ajouter</button>
-              </li>
-            ))}
-          </ul>
+        <section className="card">
+          <h3 className="font-bold mb-2">Ajouter un film (TMDb)</h3>
+          <div className="relative">
+            <input className="w-full rounded-2xl border px-4 py-3" value={q} onChange={e=>setQ(e.target.value)} placeholder='Tape pour chercher…' />
+            {q && (
+              <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-candy max-h-96 overflow-auto z-10">
+                {searching && <div className="px-4 py-2 text-sm opacity-60">Recherche…</div>}
+                {!searching && suggests.length===0 && q.trim().length>=2 && (
+                  <div className="px-4 py-2 text-sm opacity-60">Aucun résultat</div>
+                )}
+                {suggests.slice(0,10).map(m => (
+                  <div key={m.id} className="flex gap-3 p-2 items-center hover:bg-candy-50 cursor-pointer"
+                       onClick={()=>addMovie(m)}>
+                    {m.poster_path ? <img src={`https://image.tmdb.org/t/p/w92${m.poster_path}`} className="w-12 h-16 rounded-xl object-cover" /> : <div className="w-12 h-16 rounded-xl bg-candy-100" />}
+                    <div className="flex-1">
+                      <div className="font-semibold">{m.title}</div>
+                      <div className="text-xs opacity-60">{m.release_date?.slice(0,4) ?? '—'}</div>
+                    </div>
+                    <CandyButton>Ajouter</CandyButton>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
       <section>
-        <h3>Éléments</h3>
-        <ul style={{ listStyle:'none', padding:0, display:'grid', gap:8 }}>
+        <h3 className="font-bold mb-2">Éléments</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {items.map(it => (
-            <li key={it.id} style={{ border:'1px solid #eee', borderRadius:8, padding:12 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div>
-                  <div style={{ fontWeight:600 }}>{it.title}</div>
-                  <div style={{ fontSize:12, opacity:.8 }}>{it.notes}</div>
-                  {it.status === 'done' && (
-                    <div style={{ fontSize:12 }}>
-                      ✅ Vu/Fait {it.when_at?.slice(0,10)}{it.rating ? ` — ${it.rating}/10` : ''}
-                      {it.review ? ` — ${it.review}` : ''}
+            <div key={it.id} className="card hover:animate-bounceSoft">
+              <div className="flex gap-3">
+                {it.tmdb_id ? <MoviePoster id={it.tmdb_id} className="w-20 h-28 object-cover rounded-xl"/> : null}
+                <div className="flex-1">
+                  <div className="font-bold">{it.title}</div>
+                  {it.status==='done' ? (
+                    <div className="text-sm mt-1">
+                      ✅ {it.when_at?.slice(0,10)} — {it.rating? `${it.rating}/10` : 'sans note'} {it.review? ` — ${it.review}`:''}
                     </div>
-                  )}
-                  {it.location && (
-                    <div style={{ fontSize:12, opacity:.8 }}>
-                      📍 {it.location.label ?? `${it.location.lat.toFixed(4)}, ${it.location.lng.toFixed(4)}`}
-                    </div>
-                  )}
-                </div>
-                <div style={{ display:'flex', gap:8 }}>
-                  {it.status === 'todo' ? (
-                    <button onClick={()=>toggleDone(it)}>Marquer fait/vu</button>
-                  ) : (
-                    <button onClick={()=>updateItem(it.id, { status:'todo', rating:null, review:null, when_at:null })}>Remettre en à‑faire</button>
-                  )}
-                  <button onClick={()=>geotag(it)}>Géolocaliser</button>
+                  ) : <div className="text-sm opacity-60">À voir / faire</div>}
+                  <div className="flex gap-2 mt-2">
+                    {it.status==='todo' ? (
+                      <CandyButton onClick={()=> it.tmdb_id ? setSheetId(it.tmdb_id) : toggleDone(it)}>
+                        {it.tmdb_id ? "Voir la fiche" : 'Marquer fait'}
+                      </CandyButton>
+                    ) : (
+                      <CandyButton className="btn-outline"
+                        onClick={()=>updateItem(it.id,{ status:'todo', rating:null, review:null, when_at:null })}>Remettre</CandyButton>
+                    )}
+                    <CandyButton className="btn-outline"
+                      onClick={()=> it.location? setMapAt(it.location) : geotag(it)}>
+                      {it.location? 'Voir la carte' : 'Géolocaliser'}
+                    </CandyButton>
+                  </div>
                 </div>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
+
+      {showWheel && (
+        <Wheel items={items.filter(i=>i.status==='todo').map(i=>({ id:i.id, label:i.title }))}
+          onFinish={(itemId)=>{ const w = items.find(x=>x.id===itemId); if(w) alert('Gagnant : '+w.title); setShowWheel(false) }}
+          onClose={()=>setShowWheel(false)} />
+      )}
+
+      {sheetId && (
+        <MovieSheet id={sheetId} onClose={()=>setSheetId(null)} onDone={async ({rating,review})=>{
+          const it = items.find(x=>x.tmdb_id===sheetId); if(!it) return
+          const now = new Date().toISOString()
+          const me = (await supabase.auth.getUser()).data.user!
+          const attendees = PARTNER_UID ? [me.id, PARTNER_UID] : [me.id]
+          await markDone(it.id,{ status:'done', when_at:now, rating, review, attendees })
+          if(id) setItems(await listItems(id))
+          setSheetId(null)
+        }}/>
+      )}
+
+      {mapAt && (
+        <MapModal point={mapAt} label={'Buddy & Camélia étaient ici'} onClose={()=>setMapAt(null)}/>
+      )}
     </div>
   )
 }

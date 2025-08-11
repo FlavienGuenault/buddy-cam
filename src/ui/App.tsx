@@ -7,16 +7,16 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const nav = useNavigate()
   const loc = useLocation()
-  const ALLOW = ['flavien.guenault@gmail.com','louanedechavanne@gmail.com']
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      const email = data.session?.user.email ?? null
-      if (email && !ALLOW.includes(email)) { supabase.auth.signOut(); return }
+      setUserEmail(data.session?.user.email ?? null)
+      setReady(true)
+      if (!data.session && loc.pathname !== '/login') nav('/login')
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
-      const email = sess?.user?.email ?? null
-      if (email && !ALLOW.includes(email)) { supabase.auth.signOut(); return }
+      setUserEmail(sess?.user?.email ?? null)
+      if (!sess) nav('/login')
       else if (loc.pathname === '/login') nav('/')
     })
     return () => sub.subscription.unsubscribe()

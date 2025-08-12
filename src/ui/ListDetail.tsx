@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
 import { getList, listItems, addActivityItem, addMovieItem, markDone, updateItem } from '../lib/db'
@@ -34,7 +34,7 @@ export default function ListDetail() {
   // UI
   const [attendeesMode, setAttendeesMode] = useState<'nous'|'moi'|'elle'>('nous')
   const [showWheel, setShowWheel] = useState(false)
-  const [sheetId, setSheetId] = useState<number|null>(null)
+  const [detailItem, setDetailItem] = useState<Item|null>(null)
   const [editingGeo, setEditingGeo] = useState<Item|null>(null)
   const [meEmail, setMeEmail] = useState<string|null>(null)
 
@@ -63,7 +63,6 @@ export default function ListDetail() {
       if (!inputRef.current) return
       const r = inputRef.current.getBoundingClientRect()
       const x = (e as any).clientX, y = (e as any).clientY
-      // on ferme si on clique loin sous le champ
       if (x<r.left || x>r.right || y<r.top || y>r.bottom+300) setDropdownOpen(false)
     }
     window.addEventListener('click', close)
@@ -152,7 +151,6 @@ export default function ListDetail() {
                     </div>
                   ) : <div className="text-sm opacity-60">À voir / faire</div>}
 
-                  {/* résumé localisation */}
                   {it.location && (it.location.buddy || it.location.camelia) && (
                     <div className="text-xs opacity-70 mt-1">
                       📍 {it.location.buddy ? `Buddy: ${it.location.buddy.lat.toFixed(2)}, ${it.location.buddy.lng.toFixed(2)}` : 'Buddy: —'}
@@ -162,10 +160,9 @@ export default function ListDetail() {
                   )}
 
                   <div className="flex gap-2 mt-2">
+                    {it.tmdb_id && <button className="btn" onClick={()=> setDetailItem(it)}>Détails</button>}
                     {it.status==='todo' ? (
-                      <button className="btn" onClick={()=> it.tmdb_id ? setSheetId(it.tmdb_id) : markAsDone(it)}>
-                        {it.tmdb_id ? "Voir la fiche" : 'Marquer fait'}
-                      </button>
+                      <button className="btn-outline" onClick={()=> markAsDone(it)}>Marquer fait</button>
                     ) : (
                       <button className="btn-outline" onClick={()=>remise(it.id)}>Remettre</button>
                     )}
@@ -185,12 +182,16 @@ export default function ListDetail() {
           onFinish={()=>{}} onClose={()=>setShowWheel(false)} />
       )}
 
-      {sheetId && (
-        <MovieSheet id={sheetId} onClose={()=>setSheetId(null)} onDone={async ({ rating, review })=>{
-          const it = items.find(x=>x.tmdb_id===sheetId); if(!it) return
-          await markAsDone(it, { rating, review })
-          setSheetId(null)
-        }}/>
+      {detailItem && detailItem.tmdb_id && (
+        <MovieSheet
+          id={detailItem.tmdb_id}
+          location={detailItem.location ?? null}
+          onClose={()=>setDetailItem(null)}
+          onDone={async ({ rating, review })=>{
+            await markAsDone(detailItem, { rating, review })
+            setDetailItem(null)
+          }}
+        />
       )}
 
       {editingGeo && meEmail && (

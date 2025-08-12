@@ -56,10 +56,15 @@ body{
 .poems-theme .shadow-candy { box-shadow: 0 10px 20px rgba(16,185,129,.22), 0 6px 6px rgba(5,150,105,.18) !important; }
 .poems-theme .btn-primary { background-color: var(--poem-green-600) !important; border-color: var(--poem-green-600) !important; }
 
+/* Poèmes : neutraliser les marges parasitaires des paragraphes */
+.poems-theme .prose p,
+.poems-theme .prose pre,
+.poems-theme .prose blockquote { margin-top: 0 !important; margin-bottom: 0 !important; }
+
 /* ===== Birds sprite diagonaux pour transition Poèmes ===== */
 .poem-birds-container { position: absolute; inset: 0; overflow: hidden; }
 
-/* Sprite (CodePen style), mais en CSS “plat” */
+/* Sprite (10 frames) */
 .bird {
   background-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg');
   background-size: auto 100%;
@@ -70,14 +75,12 @@ body{
   animation-timing-function: steps(10);
   animation-iteration-count: 1;
 }
-
-/* cycle d’ailes court (comme la durée d’overlay ~1.4s) */
 @keyframes bird-cycle { to { background-position: -900px 0; } }
 
-/* Container = trajectoire diagonale bas-gauche -> haut-droit */
+/* Container = diagonale de gauche/bas -> droite/haut, mais "top" variable */
 .bird-container {
   position: absolute;
-  left: -20vw; bottom: -20vh;
+  left: -20vw;
   transform: translate3d(0,0,0) scale(.75);
   will-change: transform, opacity;
   opacity: 0;
@@ -85,39 +88,15 @@ body{
   animation-timing-function: cubic-bezier(.25,.8,.3,1);
   animation-fill-mode: both;
 }
-
-/* Trajectoire courte (1.4–1.9s), légère ondulation */
 @keyframes fly-diagonal {
-  0%   { transform: translate(-10vw, 15vh) scale(.7) rotate(-6deg); opacity: 0; }
+  0%   { transform: translate(-8vw, 12vh) scale(.7) rotate(-6deg); opacity: 0; }
   10%  { opacity: 1; }
-  45%  { transform: translate(35vw, -5vh)  scale(.8) rotate(-2deg); }
-  70%  { transform: translate(70vw, -20vh) scale(.9) rotate(0deg); }
-  100% { transform: translate(110vw, -45vh) scale(1) rotate(3deg); opacity: 0; }
+  45%  { transform: translate(35vw, -4vh)  scale(.82) rotate(-2deg); }
+  70%  { transform: translate(72vw, -18vh) scale(.94) rotate(0deg); }
+  100% { transform: translate(112vw, -42vh) scale(1) rotate(3deg); opacity: 0; }
 }
 
-/* Variantes de durées/délais pour 12 oiseaux */
-.bird-container--1  { animation-duration: 1.4s; animation-delay: 0ms;   }
-.bird-container--2  { animation-duration: 1.5s; animation-delay: 80ms;  }
-.bird-container--3  { animation-duration: 1.55s; animation-delay: 160ms;}
-.bird-container--4  { animation-duration: 1.45s; animation-delay: 240ms;}
-.bird-container--5  { animation-duration: 1.6s; animation-delay: 320ms; }
-.bird-container--6  { animation-duration: 1.7s; animation-delay: 400ms; }
-.bird-container--7  { animation-duration: 1.5s; animation-delay: 480ms; }
-.bird-container--8  { animation-duration: 1.8s; animation-delay: 560ms; }
-.bird-container--9  { animation-duration: 1.65s;animation-delay: 640ms; }
-.bird-container--10 { animation-duration: 1.9s; animation-delay: 720ms; }
-.bird-container--11 { animation-duration: 1.55s;animation-delay: 800ms; }
-.bird-container--12 { animation-duration: 1.75s;animation-delay: 880ms; }
-
-/* Vitesses d'ailes (un poil variées) */
-.bird--1, .bird--7  { animation-duration: .9s; }
-.bird--2, .bird--8  { animation-duration: 1.0s; }
-.bird--3, .bird--9  { animation-duration: .95s; }
-.bird--4, .bird--10 { animation-duration: 1.05s; }
-.bird--5, .bird--11 { animation-duration: 1.1s; }
-.bird--6, .bird--12 { animation-duration: 1.0s; }
-
-/* Fallback logo (si reduce motion) – on garde ce que tu avais */
+/* Fallback logo */
 .logo-container { position: absolute; inset: auto 0 6%; display: grid; place-items: center; }
 .logo-rise { width: 72px; height: 72px; opacity: 0; }
 @keyframes rise-spin {

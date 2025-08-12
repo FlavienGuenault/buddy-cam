@@ -69,6 +69,15 @@ export default function PoemEditor(){
     <div className="container grid gap-3">
       <h2 className="font-black text-candy-700">{isEditing ? 'Modifier le poème' : 'Nouveau poème'}</h2>
 
+      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-[2000]">
+        <div className="rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-2 px-3 py-2">
+          <button className="px-3 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
+          <button className="px-3 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>
+          <button className="px-3 py-1 rounded-lg" onClick={()=>surround('<div style=\"text-align:center\">','</div>')}>Centrer</button>
+        </div>
+      </div>
+      <div className="h-14" />
+
       <div className="grid gap-2">
         <input
           className="rounded-2xl border px-3 py-3"
@@ -88,15 +97,6 @@ export default function PoemEditor(){
           onChange={e=>setContent(e.target.value)}
           placeholder="Ton texte (Markdown). Entrée = nouveau vers."
         />
-
-        {/* Toolbar collante au bas de la zone scrollable */}
-        <div className="sticky bottom-2 z-20">
-          <div className="mx-auto w-fit rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-1 px-2 py-1">
-            <button className="px-2 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
-            <button className="px-2 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>
-            <button className="px-2 py-1 rounded-lg" onClick={()=>surround('<div style=\"text-align:center\">','</div>')}>Centrer</button>
-          </div>
-        </div>
       </div>
       </div>
 

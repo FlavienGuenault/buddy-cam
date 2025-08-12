@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
 import {
   getList, listItems, addActivityItem, addMovieItem,
-  markDone, updateItem, deleteItem, addCourseItem
+  markDone, updateItem, deleteItem, addCourseItem, bulkDeleteItems, bulkUpdateItems
 } from '../lib/db'
 import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
@@ -94,6 +94,7 @@ export default function ListDetail() {
     await addCourseItem(id, courseTitle.trim(), qty === '' ? null : Number(qty), unit || null)
     setCourseTitle(''); setQty(''); setUnit('')
     setItems(await listItems(id))
+    pushSug(courseTitle, unit||null)
   }
   async function addMovie(m: TmdbMovie) {
     if (!id) return
@@ -111,6 +112,51 @@ export default function ListDetail() {
     await updateItem(itemId,{ status:'todo', rating:null, review:null, when_at:null })
     if (id) setItems(await listItems(id))
   }
+
+  // --- COURSES UX ---
+const [hideDone, setHideDone] = useState(false)
+
+// suggestions locales
+type Suggestion = { t: string, u?: string|null }
+function readSug(): Suggestion[] {
+  try { return JSON.parse(localStorage.getItem('course_sug')||'[]') } catch { return [] }
+}
+function writeSug(s: Suggestion[]){
+  localStorage.setItem('course_sug', JSON.stringify(s.slice(0,30)))
+}
+const [sug, setSug] = useState<Suggestion[]>(readSug())
+function pushSug(title:string, unit?:string|null){
+  const t = title.trim()
+  if(!t) return
+  const next = [{ t, u: unit||null }, ...sug.filter(x=>x.t.toLowerCase()!==t.toLowerCase())]
+  setSug(next); writeSug(next)
+}
+
+// stepper qty
+async function stepQty(it:any, delta:number){
+  const next = Math.max(0, Number(it.qty||0) + delta)
+  await updateItem(it.id, { qty: next === 0 ? null : next })
+  setItems(await listItems(id!))
+}
+
+// tout cocher/décocher
+async function toggleAll(toDone:boolean){
+  const ids = items.filter(x => toDone ? x.status==='todo' : x.status==='done').map(x=>x.id)
+  if(ids.length===0) return
+  await bulkUpdateItems(ids, { status: toDone ? 'done' : 'todo' })
+  setItems(await listItems(id!))
+}
+
+// supprimer faits
+async function clearDone(){
+  const ids = items.filter(x=>x.status==='done').map(x=>x.id)
+  if(ids.length===0) return
+  const ok = confirm(`Supprimer ${ids.length} article(s) fait(s) ?`)
+  if(!ok) return
+  await bulkDeleteItems(ids)
+  setItems(await listItems(id!))
+}
+
 
   if (!list) return <div className="card">Chargement…</div>
 
@@ -136,6 +182,16 @@ export default function ListDetail() {
           {list.name} <small className="opacity-60 font-normal">({list.type})</small>
         </h2>
       </header>
+      {list?.type==='courses' && sug.length>0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {sug.map(s => (
+            <button key={s.t} className="px-3 py-1.5 rounded-full border shadow-candy text-sm active:scale-95"
+              onClick={()=>{ setCourseTitle(s.t); setUnit(s.u||'') }}>
+              {s.t}{s.u?` · ${s.u}`:''}
+            </button>
+          ))}
+        </div>
+      )}
       {list?.type === 'courses' && (
         <section className="card p-0">
           <form onSubmit={addCourse} className="grid gap-3 p-3">
@@ -208,14 +264,33 @@ export default function ListDetail() {
 
       <section>
         <h3 className="font-bold mb-2">Éléments</h3>
+        <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-10 bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2">
+          <span className="text-sm opacity-70">
+            {items.filter(x=>x.status==='todo').length} à acheter · {items.filter(x=>x.status==='done').length} faits
+          </span>
+          <label className="ml-auto flex items-center gap-1 text-sm">
+            <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
+          </label>
+          <button className="btn text-xs" onClick={()=>toggleAll(true)}>Tout cocher</button>
+          <button className="btn text-xs" onClick={()=>toggleAll(false)}>Tout décocher</button>
+          <button className="btn btn-outline text-xs" onClick={clearDone}>Supprimer faits</button>
+        </div>
         <div className="grid grid-cols-1 gap-3">
-          {orderedItems.map(it => (
+          {orderedItems
+            .filter(it => hideDone ? it.status!=='done' : true)
+            .map(it => (
             list?.type === 'courses' ? (
               // --- RENDU SPÉCIAL COURSES (case à cocher + qté/unité) ---
               <label
                 key={it.id}
                 className={`card relative flex items-center gap-3 ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
               >
+                {/* stepper qty */}
+                <div className="flex items-center gap-1">
+                  <button className="w-8 h-8 rounded-full border" onClick={()=>stepQty(it, -1)}>-</button>
+                  <div className="w-10 text-center text-sm">{it.qty ?? 0}</div>
+                  <button className="w-8 h-8 rounded-full border" onClick={()=>stepQty(it, +1)}>+</button>
+                </div>
                 {/* checkbox done/todo */}
                 <input
                   type="checkbox"

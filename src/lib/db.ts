@@ -142,3 +142,13 @@ export async function getPoemById(id:string){
   if (error) throw error
   return data as Poem
 }
+
+export async function bulkUpdateItems(ids: string[], patch: Record<string, any>){
+  const { error } = await supabase.from('items').update(patch).in('id', ids)
+  if (error) throw error
+}
+
+export async function bulkDeleteItems(ids: string[]){
+  const { error } = await supabase.from('items').delete().in('id', ids)
+  if (error) throw error
+}

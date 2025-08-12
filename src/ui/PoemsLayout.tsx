@@ -21,22 +21,35 @@ export default function PoemsLayout(){
 
 function BirdsOverlay(){
   const logoUrl = `${import.meta.env.BASE_URL}pwa-192x192.png`
+
+  const birds = Array.from({ length: 24 }).map((_, i) => {
+    // top = 10%..85% pour couvrir tout l'écran
+    const top = `${10 + Math.random()*75}%`
+    const delayMs = i * 60  // étalement
+    const dur = 1.45 + (Math.random()*0.6) // 1.45s - 2.05s
+    const wing = 0.92 + (Math.random()*0.25) // battement
+    return { i, top, delayMs, dur, wing }
+  })
+
   return (
     <div className="fixed inset-0 pointer-events-none z-[999] bg-gradient-to-b from-emerald-50/80 to-transparent">
       <div className="poem-birds-container">
-        {/* 12 oiseaux, timings variés */}
-        <div className="bird-container bird-container--1"><div className="bird bird--1"/></div>
-        <div className="bird-container bird-container--2"><div className="bird bird--2"/></div>
-        <div className="bird-container bird-container--3"><div className="bird bird--3"/></div>
-        <div className="bird-container bird-container--4"><div className="bird bird--4"/></div>
-        <div className="bird-container bird-container--5"><div className="bird bird--5"/></div>
-        <div className="bird-container bird-container--6"><div className="bird bird--6"/></div>
-        <div className="bird-container bird-container--7"><div className="bird bird--7"/></div>
-        <div className="bird-container bird-container--8"><div className="bird bird--8"/></div>
-        <div className="bird-container bird-container--9"><div className="bird bird--9"/></div>
-        <div className="bird-container bird-container--10"><div className="bird bird--10"/></div>
-        <div className="bird-container bird-container--11"><div className="bird bird--11"/></div>
-        <div className="bird-container bird-container--12"><div className="bird bird--12"/></div>
+        {birds.map(({ i, top, delayMs, dur, wing }) => (
+          <div
+            key={i}
+            className="bird-container"
+            style={{
+              top, left: '-18vw',
+              animationDelay: `${delayMs}ms`,
+              animationDuration: `${dur}s`,
+            }}
+          >
+            <div
+              className="bird"
+              style={{ animationDuration: `${wing}s` }}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Fallback logo si réduction des mouvements */}

@@ -91,7 +91,7 @@ body{
 @keyframes fly-diagonal {
   /* A = gauche/bas, B = droite/haut, pas de fade */
   0%   { transform: translate(-12vw, 16vh) scale(.7) rotate(-6deg); }
-  100% { transform: translate(112vw, -42vh) scale(1) rotate(3deg); }
+  100% { transform: translate(130vw, -55vh) scale(1) rotate(3deg); }
 }
 
 /* Fallback logo */
@@ -110,3 +110,4 @@ body{
 }
 
 .card { background-clip: padding-box; }
+.course-item { border-radius: 1.5rem; background-color: #fff; border: 1px solid rgba(244, 114, 182, .25); box-shadow: none !important; }

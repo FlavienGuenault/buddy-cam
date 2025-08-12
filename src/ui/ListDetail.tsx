@@ -243,7 +243,7 @@ export default function ListDetail() {
       {showBigWheelBtn && (
         <>
           <FancyWheelButton offsetPx={65} onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />
-          <div style={{ height: 28 }} />
+          <div style={{ height: 28 + 65 }} />
         </>
       )}
 

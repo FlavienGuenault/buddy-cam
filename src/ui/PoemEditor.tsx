@@ -33,6 +33,12 @@ export default function PoemEditor(){
     setTimeout(()=>setToast(''), 1500)
   }
 
+  function preserveNewlines(src: string){
+    const s = src.replace(/\r\n/g, '\n')
+    // remplace chaque série de ≥2 sauts par le même nombre de <br/>
+    return s.replace(/\n{2,}/g, m => Array.from({length:m.length}).map(()=>'<br/>').join(''))
+  }
+
   async function saveDraft(){
     if (!title.trim()) { showToast('Titre requis'); return }
     if (!poemId){
@@ -72,7 +78,7 @@ export default function PoemEditor(){
         <a href="/poems" className="text-sm opacity-70 hover:opacity-100">← Retour aux poèmes</a>
       </div>
 
-      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+50px)] z-[2000]">
+      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+38px)] z-[2000]">
         <div className="rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-2 px-3 py-2">
           <button className="px-3 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
           <button className="px-3 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>
@@ -130,7 +136,7 @@ export default function PoemEditor(){
               div: (props) => <div {...props} />, // support du <div style="text-align:center">
             }}
           >
-            {content.replace(/\r\n/g, '\n')}
+            {preserveNewlines(content)}
           </ReactMarkdown>
         </div>
       </section>

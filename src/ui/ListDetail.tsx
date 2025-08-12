@@ -176,7 +176,7 @@ async function clearDone(){
 })
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 overflow-x-hidden">
       <header className="flex justify-between items-center">
         <h2 className="text-2xl font-black text-candy-700">
           {list.name} <small className="opacity-60 font-normal">({list.type})</small>
@@ -265,7 +265,7 @@ async function clearDone(){
       <section>
         <h3 className="font-bold mb-2">Éléments</h3>
         {list?.type==='courses' && (
-          <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2">
+          <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] w-full bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2 overflow-x-auto overscroll-x-contain">
             <span className="text-sm opacity-70">
               {items.filter(x=>x.status==='todo').length} à acheter · {items.filter(x=>x.status==='done').length} faits
             </span>

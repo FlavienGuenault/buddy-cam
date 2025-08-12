@@ -37,6 +37,12 @@ export default function PoemView(){
   const isOwner = meId === poem.author_id
   const authorLabel = isOwner ? me : 'Autre' // on distingue visuel ci-dessous
 
+  function preserveNewlines(src: string){
+    const s = src.replace(/\r\n/g, '\n')
+    // remplace chaque série de ≥2 sauts par le même nombre de <br/>
+    return s.replace(/\n{2,}/g, m => Array.from({length:m.length}).map(()=>'<br/>').join(''))
+    }
+
   const badge =
     poem.author_id === meId
       ? <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-amber-600">• Buddy</span>
@@ -82,7 +88,7 @@ export default function PoemView(){
                 div: (props) => <div {...props} />,
             }}
             >
-            {poem.content.replace(/\r\n/g, '\n')}
+           {preserveNewlines(poem.content)}
         </ReactMarkdown>
       </article>
     </div>

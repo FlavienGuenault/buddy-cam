@@ -82,16 +82,15 @@ body{
   position: absolute;
   left: -20vw;
   transform: translate3d(0,0,0) scale(.75);
-  will-change: transform, opacity;
-  opacity: 1;
+  will-change: transform;
   animation-name: fly-diagonal;
-  animation-timing-function: cubic-bezier(.25,.8,.3,1);
+  animation-timing-function: linear;   /* vitesse constante */
   animation-fill-mode: both;
 }
+
 @keyframes fly-diagonal {
+  /* A = gauche/bas, B = droite/haut, pas de fade */
   0%   { transform: translate(-12vw, 16vh) scale(.7) rotate(-6deg); }
-  45%  { transform: translate(35vw, -4vh)  scale(.82) rotate(-2deg); }
-  70%  { transform: translate(72vw, -18vh) scale(.94) rotate(0deg); }
   100% { transform: translate(112vw, -42vh) scale(1) rotate(3deg); }
 }
 

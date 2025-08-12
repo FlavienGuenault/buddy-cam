@@ -108,3 +108,5 @@ body{
   .poem-birds-container { display: none; }
   .logo-rise { animation-duration: .8s; }
 }
+
+.card { background-clip: padding-box; }

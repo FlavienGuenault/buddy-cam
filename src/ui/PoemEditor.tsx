@@ -79,7 +79,7 @@ export default function PoemEditor(){
         <Link to="/poems" className="text-sm opacity-70 hover:opacity-100">← Retour aux poèmes</Link>
       </div>
 
-      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+38px)] z-[2000]">
+      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-[2000]">
         <div className="rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-2 px-3 py-2">
           <button className="px-3 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
           <button className="px-3 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>

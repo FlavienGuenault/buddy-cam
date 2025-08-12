@@ -176,7 +176,7 @@ async function clearDone(){
 })
 
   return (
-    <div className="grid gap-4 overflow-x-hidden">
+    <div className="grid gap-5 overflow-x-hidden">
       <header className="flex justify-between items-center">
         <h2 className="text-2xl font-black text-candy-700">
           {list.name} <small className="opacity-60 font-normal">({list.type})</small>
@@ -262,10 +262,12 @@ async function clearDone(){
         </section>
       )}
 
-      <section className="overflow-x-hidden">
+      <section className="overflow-x-hidden space-y-3">
         <h3 className="font-bold mb-2">Éléments</h3>
         {list?.type==='courses' && (
-          <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] w-full bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2 overflow-x-auto overscroll-x-contain">
+          <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] w-full bg-white/90 backdrop-blur
+                          rounded-3xl border px-3 py-2 flex items-center gap-2 mb-4
+                          overflow-x-auto">            
             <label className="ml-auto flex items-center gap-1 text-sm">
               <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
             </label>
@@ -274,7 +276,7 @@ async function clearDone(){
             <button className="btn btn-outline text-xs" onClick={clearDone}>Supprimer faits</button>
           </div>
         )}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-4">
           {orderedItems
             .filter(it => hideDone ? it.status!=='done' : true)
             .map(it => (

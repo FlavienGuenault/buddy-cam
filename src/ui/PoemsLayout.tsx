@@ -43,24 +43,28 @@ function BirdsOverlay({ onDone }: { onDone: () => void }){
     const nodes = Array.from(el.querySelectorAll('.bird-container'))
     let finished = 0
 
-    const onAnimEnd = () => {
+    const onAnimEnd = (e: Event) => {
+      // ⛔ ignore les animationend qui viennent des enfants (les ailes)
+      if (e.target !== e.currentTarget) return
+
       finished += 1
       if (!doneRef.current && finished >= nodes.length) {
         doneRef.current = true
-        // petite marge pour s’assurer qu’ils sont bien sortis
+        // petite marge pour être sûr que tout est sorti de l’écran
         setTimeout(onDone, 120)
       }
     }
 
-    nodes.forEach(n => n.addEventListener('animationend', onAnimEnd))
+    nodes.forEach(n => n.addEventListener('animationend', onAnimEnd as any))
+    // filet de sécu (ne sert normalement jamais)
     const safety = setTimeout(() => { if (!doneRef.current) onDone() }, SAFETY_MS)
 
     return () => {
       clearTimeout(safety)
-      nodes.forEach(n => n.removeEventListener('animationend', onAnimEnd))
+      nodes.forEach(n => n.removeEventListener('animationend', onAnimEnd as any))
     }
   }, [onDone])
-
+  
   return (
     <div className="fixed inset-0 pointer-events-none z-[999] bg-gradient-to-b from-emerald-50/80 to-transparent">
       <div ref={containerRef} className="poem-birds-container">

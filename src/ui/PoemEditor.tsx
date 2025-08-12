@@ -68,8 +68,11 @@ export default function PoemEditor(){
   return (
     <div className="container grid gap-3">
       <h2 className="font-black text-candy-700">{isEditing ? 'Modifier le poème' : 'Nouveau poème'}</h2>
+      <div className="mb-1">
+        <a href="/poems" className="text-sm opacity-70 hover:opacity-100">← Retour aux poèmes</a>
+      </div>
 
-      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-[2000]">
+      <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+50px)] z-[2000]">
         <div className="rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-2 px-3 py-2">
           <button className="px-3 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
           <button className="px-3 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>
@@ -119,11 +122,15 @@ export default function PoemEditor(){
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkBreaks]}
             rehypePlugins={[rehypeRaw]}
+            allowedElements={['br','strong','em','del','code','span','div','a']}
+            unwrapDisallowed
             components={{
-              p: (props) => <p className="whitespace-pre-wrap leading-7">{props.children}</p>,
+              br: (props) => <br />,
+              span: (props) => <span className="whitespace-pre-wrap">{props.children}</span>,
+              div: (props) => <div {...props} />, // support du <div style="text-align:center">
             }}
           >
-            {content}
+            {content.replace(/\r\n/g, '\n')}
           </ReactMarkdown>
         </div>
       </section>

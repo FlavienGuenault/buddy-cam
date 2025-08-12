@@ -22,9 +22,9 @@ export default function PoemsLayout(){
 function BirdsOverlay(){
   const logoUrl = `${import.meta.env.BASE_URL}pwa-192x192.png`
 
-  const birds = Array.from({ length: 24 }).map((_, i) => {
-    // top = 10%..85% pour couvrir tout l'écran
-    const top = `${10 + Math.random()*75}%`
+  const birds = Array.from({ length: 48 }).map((_, i) => {
+    // top entre 0% et 80% => couvre vraiment tout l’écran
+    const top = `${Math.round(Math.random()*80)}%`
     const delayMs = i * 60  // étalement
     const dur = 1.45 + (Math.random()*0.6) // 1.45s - 2.05s
     const wing = 0.92 + (Math.random()*0.25) // battement

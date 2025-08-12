@@ -44,6 +44,9 @@ export default function PoemView(){
 
   return (
     <div className="container max-w-2xl">
+    <div className="mb-2">
+        <Link to="/poems" className="text-sm opacity-70 hover:opacity-100">← Retour aux poèmes</Link>
+    </div>
       <header className="flex items-start gap-3 mb-3">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-black leading-tight tracking-tight">{poem.title}</h1>
@@ -71,11 +74,15 @@ export default function PoemView(){
         <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkBreaks]}
             rehypePlugins={[rehypeRaw]}
+            allowedElements={['br','strong','em','del','code','span','div','a']}
+            unwrapDisallowed
             components={{
-                p: (props) => <p className="whitespace-pre-wrap leading-7">{props.children}</p>,
+                br: (props) => <br />,
+                span: (props) => <span className="whitespace-pre-wrap">{props.children}</span>,
+                div: (props) => <div {...props} />,
             }}
             >
-            {poem.content}
+            {poem.content.replace(/\r\n/g, '\n')}
         </ReactMarkdown>
       </article>
     </div>

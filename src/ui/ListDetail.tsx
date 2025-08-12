@@ -264,17 +264,19 @@ async function clearDone(){
 
       <section>
         <h3 className="font-bold mb-2">Éléments</h3>
-        <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-10 bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2">
-          <span className="text-sm opacity-70">
-            {items.filter(x=>x.status==='todo').length} à acheter · {items.filter(x=>x.status==='done').length} faits
-          </span>
-          <label className="ml-auto flex items-center gap-1 text-sm">
-            <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
-          </label>
-          <button className="btn text-xs" onClick={()=>toggleAll(true)}>Tout cocher</button>
-          <button className="btn text-xs" onClick={()=>toggleAll(false)}>Tout décocher</button>
-          <button className="btn btn-outline text-xs" onClick={clearDone}>Supprimer faits</button>
-        </div>
+        {list?.type==='courses' && (
+          <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2">
+            <span className="text-sm opacity-70">
+              {items.filter(x=>x.status==='todo').length} à acheter · {items.filter(x=>x.status==='done').length} faits
+            </span>
+            <label className="ml-auto flex items-center gap-1 text-sm">
+              <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
+            </label>
+            <button className="btn text-xs" onClick={()=>toggleAll(true)}>Tout cocher</button>
+            <button className="btn text-xs" onClick={()=>toggleAll(false)}>Tout décocher</button>
+            <button className="btn btn-outline text-xs" onClick={clearDone}>Supprimer faits</button>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-3">
           {orderedItems
             .filter(it => hideDone ? it.status!=='done' : true)

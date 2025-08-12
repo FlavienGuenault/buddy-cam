@@ -199,7 +199,7 @@ export default function ListDetail() {
         />
       )}
 
-      {showBigWheelBtn && <FancyWheelButton offsetPx={106} onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />}
+      {showBigWheelBtn && <FancyWheelButton offsetPx={206} onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />}
       {showBigWheelBtn && <div className="h-28" />}
     </div>
   )

@@ -171,6 +171,12 @@ export default function ListDetail() {
                 <div className="flex-1">
                   <div className="font-bold">{it.title}</div>
 
+                  {it.notes && (
+                    <div className="text-sm opacity-75 mt-1">
+                      {it.notes}
+                    </div>
+                  )}
+
                   {it.status==='done' ? (
                     <div className="text-sm mt-1">
                       ✅ {it.when_at?.slice(0,10)} — {it.rating? `${it.rating}/10` : 'sans note'} {it.review? ` — ${it.review}`:''}
@@ -187,14 +193,34 @@ export default function ListDetail() {
 
                   <div className="flex flex-wrap gap-2 mt-2">
                     {it.tmdb_id && (
-                      <CandyButton onClick={()=> setDetailItem(it)}>Détails</CandyButton>
+                      <button
+                        onClick={() => setDetailItem(it)}
+                        className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-500 hover:bg-candy-600 shadow-candy active:scale-95 transition"
+                      >
+                        Détails
+                      </button>
                     )}
-                    {it.status==='todo' ? (
-                      <button className="btn-outline" onClick={()=> markAsDone(it)}>Marquer fait</button>
+
+                    {it.status === 'todo' ? (
+                      <button
+                        onClick={() => markAsDone(it)}
+                        className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 shadow-candy active:scale-95 transition"
+                      >
+                        Marquer fait
+                      </button>
                     ) : (
-                      <button className="btn-outline" onClick={()=>remise(it.id)}>Remettre</button>
+                      <button
+                        onClick={() => remise(it.id)}
+                        className="rounded-full px-3 py-1.5 text-sm font-semibold bg-white border border-candy-300 text-candy-700 hover:bg-candy-50 shadow-candy active:scale-95 transition"
+                      >
+                        Remettre
+                      </button>
                     )}
-                    <button className="btn-outline" onClick={()=> setEditingGeo(it)}>
+
+                    <button
+                      onClick={() => setEditingGeo(it)}
+                      className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-700 hover:bg-candy-800 shadow-candy active:scale-95 transition"
+                    >
                       Lieux Buddy/Camélia
                     </button>
                   </div>

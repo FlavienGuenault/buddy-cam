@@ -47,25 +47,27 @@ export default function Lists() {
         <h2 className="font-bold mb-2">Mes listes</h2>
         {lists.length === 0 ? <p className="opacity-70">Aucune liste pour l’instant.</p> : (
           <div className="grid gap-3">
-            {lists.map(l => (
-             <div key={l.id} className="card relative hover:animate-bounceSoft">
+            {lists.map((l) => (
+              <div key={l.id} className="card relative hover:animate-bounceSoft">
                 {/* bouton croix */}
                 <button
-                  className="icon-btn absolute top-2 right-2"
+                  className="icon-btn absolute top-2 right-2 z-10"
                   title="Supprimer la liste"
-                  onClick={(e)=>{ e.stopPropagation(); setToDelete(l) }}
+                  onClick={(e) => {
+                    e.preventDefault(); // évite de suivre le lien
+                    e.stopPropagation();
+                    setToDelete(l);
+                  }}
                 >
                   ✕
                 </button>
 
-                <Link to={`/list/${l.id}`} className="block">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{l.name}</div>
-                      <div className="text-xs opacity-60">{l.type}</div>
-                    </div>
+                <Link to={`/list/${l.id}`} className="block min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="font-semibold truncate">{l.name}</div>
                     {l.type === 'movies' && <InlinePosters listId={l.id} />}
                   </div>
+                  <div className="text-xs opacity-60">{l.type}</div>
                 </Link>
               </div>
             ))}

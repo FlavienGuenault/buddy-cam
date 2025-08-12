@@ -9,12 +9,11 @@ import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
 import { supabase } from '../lib/supabase'
 
-import Wheel from './Wheel'
+import Reel from './Reel'
 import MovieSheet from './MovieSheet'
 import MapPicker from './MapPicker'
 import FancyWheelButton from './FancyWheelButton'
 import ConfirmModal from './ConfirmModal'
-import CandyButton from './CandyButton'
 
 function whoAmI(email?: string|null): 'Buddy'|'Camélia'|'Autre' {
   if (!email) return 'Autre'
@@ -233,10 +232,22 @@ export default function ListDetail() {
       </section>
 
       {showWheel && (
-        <Wheel
-          items={items.filter(i=>i.status==='todo').map(i=>({ id:i.id, label:i.title }))}
-          onFinish={()=>{}}
-          onClose={()=>setShowWheel(false)}
+        <Reel
+          items={items
+            .filter(i => i.status === 'todo')
+            .map(i => ({ id: i.id, title: i.title, tmdb_id: i.tmdb_id ?? undefined }))}
+          onFinish={(w) => {
+            // on ferme le reel en douceur
+            setShowWheel(false)
+
+            // on récupère l'Item complet (pour MovieSheet)
+            const it = items.find(i => i.id === w.itemId)
+            if (it) {
+              // petit délai pour laisser respirer l'anim & confettis
+              setTimeout(() => setDetailItem(it), 450)
+            }
+          }}
+          onClose={() => setShowWheel(false)}
         />
       )}
 

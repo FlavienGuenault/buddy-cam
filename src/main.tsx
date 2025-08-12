@@ -8,7 +8,7 @@ import ListDetail from './ui/ListDetail'
 import Login from './ui/Login'
 import About from './ui/About'
 
-const BASENAME = import.meta.env.BASE_URL
+const BASENAME = import.meta.env.BASE_URL || '/buddy-cam/'
 
 const router = createBrowserRouter([
   { path: '/', element: <App />, children: [

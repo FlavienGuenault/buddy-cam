@@ -7,6 +7,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Si on vient de /buddy-cam/?/list/abc → on remet /buddy-cam/list/abc (historique propre)
+      (function() {
+        var l = window.location;
+        if (l.search && l.search.startsWith('?/')) {
+          var decoded = l.search.slice(2).split('&').join('?'); // restauration des '?'
+          var newPath = l.pathname.replace(/\/?$/, '/') + decoded + l.hash;
+          window.history.replaceState(null, '', newPath);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

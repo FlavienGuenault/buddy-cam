@@ -94,6 +94,8 @@ export default function ListDetail() {
   }
 
   if (!list) return <div className="card">Chargement…</div>
+  const showBigWheelBtn =
+  list.type === 'movies' && items.filter(i => i.status === 'todo').length >= 2
 
   return (
     <div className="grid gap-4">
@@ -196,9 +198,9 @@ export default function ListDetail() {
           }}
         />
       )}
-      {list.type === 'movies' && items.filter(i=>i.status==='todo').length >= 2 && (
-        <FancyWheelButton onClick={()=>{ setDropdownOpen(false); setShowWheel(true) }} />
-      )}
+
+      {showBigWheelBtn && <FancyWheelButton onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />}
+      {showBigWheelBtn && <div className="h-28" />}
     </div>
   )
 }

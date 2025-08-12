@@ -10,6 +10,7 @@ import About from './ui/About'
 import PoemsList from './ui/PoemsList'
 import PoemEditor from './ui/PoemEditor'
 import PoemView from './ui/PoemView'
+import PoemsLayout from './ui/PoemsLayout'
 
 const BASENAME = import.meta.env.BASE_URL || '/buddy-cam/'
 
@@ -20,10 +21,12 @@ const router = createBrowserRouter([
     { path: '/about', element: <About /> },
 
     // --- AJOUT ROUTES POÈMES ---
-    { path: '/poems', element: <PoemsList /> },
-    { path: '/poems/new', element: <PoemEditor /> },
-    { path: '/poems/edit/:id', element: <PoemEditor /> },
-    { path: '/poems/:id', element: <PoemView /> },
+      { path: '/poems', element: <PoemsLayout />, children: [
+      { path: '/poems', element: <PoemsList /> },
+      { path: '/poems/new', element: <PoemEditor /> },
+      { path: '/poems/edit/:id', element: <PoemEditor /> },
+      { path: '/poems/:id', element: <PoemView /> },
+    ]},
   ]},
   { path: '/login', element: <Login /> }
 ], { basename: BASENAME })

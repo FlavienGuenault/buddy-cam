@@ -78,27 +78,26 @@ export default function PoemEditor(){
         />
 
         {/* Zone d'écriture */}
-        <div className="relative">
-          <textarea
-            ref={taRef}
-            className="w-full rounded-2xl border px-3 py-3 min-h-[60vh]"
-            value={content}
-            onFocus={()=>setFocused(true)}
-            onBlur={()=>setFocused(false)}
-            onChange={e=>setContent(e.target.value)}
-            placeholder="Ton texte (Markdown). Entrée = nouveau vers."
-          />
-          {/* Mini-toolbar flottante (collée au bas de la zone quand focus) */}
-          {focused && (
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
-              <div className="rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-1 px-2 py-1">
-                <button className="px-2 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
-                <button className="px-2 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>
-                <button className="px-2 py-1 rounded-lg" onClick={()=>surround('<div style=\"text-align:center\">','</div>')}>Centrer</button>
-              </div>
-            </div>
-          )}
+        <div className="grid gap-2">
+        <textarea
+          ref={taRef}
+          className="w-full rounded-2xl border px-3 py-3 min-h-[60vh]"
+          value={content}
+          onFocus={()=>setFocused(true)}
+          onBlur={()=>setFocused(false)}
+          onChange={e=>setContent(e.target.value)}
+          placeholder="Ton texte (Markdown). Entrée = nouveau vers."
+        />
+
+        {/* Toolbar collante au bas de la zone scrollable */}
+        <div className="sticky bottom-2 z-20">
+          <div className="mx-auto w-fit rounded-2xl shadow-candy bg-white/95 backdrop-blur flex gap-1 px-2 py-1">
+            <button className="px-2 py-1 rounded-lg font-bold" onClick={()=>surround('**')}>B</button>
+            <button className="px-2 py-1 rounded-lg italic" onClick={()=>surround('_')}>i</button>
+            <button className="px-2 py-1 rounded-lg" onClick={()=>surround('<div style=\"text-align:center\">','</div>')}>Centrer</button>
+          </div>
         </div>
+      </div>
       </div>
 
       <div className="flex gap-2">
@@ -119,7 +118,10 @@ export default function PoemEditor(){
         <div className="prose prose-p:leading-7 prose-h1:mt-0 max-w-none">
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkBreaks]}
-            rehypePlugins={[rehypeRaw]} // pas de sanitize: app privée à 2 auteurs
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              p: (props) => <p className="whitespace-pre-wrap leading-7">{props.children}</p>,
+            }}
           >
             {content}
           </ReactMarkdown>

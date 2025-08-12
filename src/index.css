@@ -40,3 +40,47 @@ body{
 }
 
 
+/* ---- THEME POEMS (vert) : override classes candy uniquement dans .poems-theme ---- */
+.poems-theme {
+  --poem-green-50:#ecfdf5;
+  --poem-green-100:#d1fae5;
+  --poem-green-300:#6ee7b7;
+  --poem-green-600:#059669;
+  --poem-green-700:#047857;
+}
+.poems-theme .bg-candy-500 { background-color: var(--poem-green-600) !important; }
+.poems-theme .bg-candy-600 { background-color: var(--poem-green-700) !important; }
+.poems-theme .bg-candy-700 { background-color: var(--poem-green-700) !important; }
+.poems-theme .text-candy-700 { color: var(--poem-green-700) !important; }
+.poems-theme .border-candy-300 { border-color: var(--poem-green-300) !important; }
+.poems-theme .shadow-candy { box-shadow: 0 10px 20px rgba(16,185,129,.22), 0 6px 6px rgba(5,150,105,.18) !important; }
+.poems-theme .btn-primary { background-color: var(--poem-green-600) !important; border-color: var(--poem-green-600) !important; }
+
+/* ---- OVERLAY OISEAUX ---- */
+.bird {
+  position: absolute;
+  width: 32px; height: 24px;
+  color: #047857;
+  animation: bird-flight 1.2s ease-in forwards;
+  opacity: 0;
+}
+@keyframes bird-flight {
+  0%   { transform: translateX(0) translateY(0) scale(0.9); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateX(115vw) translateY(-20vh) scale(1.05); opacity: 0; }
+}
+
+/* Fallback logo pour réductions de mouvement */
+.logo-container { position: absolute; inset: auto 0 6%; display: grid; place-items: center; }
+.logo-rise { width: 72px; height: 72px; opacity: 0; }
+@keyframes rise-spin {
+  0% { transform: translateY(100%) rotate(0turn) scale(.8); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: translateY(-70vh) rotate(1turn) scale(1); opacity: 0; }
+}
+.logo-rise { animation: rise-spin 1.1s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bird { animation: none; display: none; }
+  .logo-rise { animation-duration: .8s; }
+}

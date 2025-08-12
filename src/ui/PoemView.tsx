@@ -69,10 +69,13 @@ export default function PoemView(){
 
       <article className="prose prose-p:leading-7 prose-h1:mt-0 max-w-none">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkBreaks]}
-          rehypePlugins={[rehypeRaw]}
-        >
-          {poem.content}
+            remarkPlugins={[remarkGfm, remarkBreaks]}
+            rehypePlugins={[rehypeRaw]}
+            components={{
+                p: (props) => <p className="whitespace-pre-wrap leading-7">{props.children}</p>,
+            }}
+            >
+            {poem.content}
         </ReactMarkdown>
       </article>
     </div>

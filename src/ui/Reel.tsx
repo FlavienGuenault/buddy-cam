@@ -7,6 +7,7 @@ type ReelItem = { id: string; title: string; tmdb_id?: number | null }
 type Winner = { itemId: string; tmdb_id?: number; title: string }
 type Entry = { itemId: string; title: string; img?: string; tmdb_id?: number }
 
+// charge les affiches
 function useReelEntries(items: ReelItem[]) {
   const [entries, setEntries] = useState<Entry[]>([])
   useEffect(() => {
@@ -18,10 +19,10 @@ function useReelEntries(items: ReelItem[]) {
           try {
             const m = await getMovie(it.tmdb_id)
             if (m?.poster_path) {
-              out.push({ itemId: it.id, title: it.title, tmdb_id: it.tmdb_id, img: TMDB_IMG(m.poster_path, 'w342') })
+              out.push({ itemId: it.id, title: it.title, tmdb_id: it.tmdb_id!, img: TMDB_IMG(m.poster_path, 'w342') })
               continue
             }
-          } catch { /* ignore */ }
+          } catch {/* noop */}
         }
         out.push({ itemId: it.id, title: it.title, tmdb_id: it.tmdb_id ?? undefined })
       }
@@ -32,83 +33,86 @@ function useReelEntries(items: ReelItem[]) {
   return entries
 }
 
-// --- Petit pirate (chauve + barbe rousse) ---
+// Pirate (plus grand) + œil libre #BBD2E1
 function PirateSVG() {
   return (
-    <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden>
+    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
       <circle cx="32" cy="28" r="14" fill="#f6d2b8"/>
       {/* barbe rousse */}
-      <path d="M18,30 C18,42 46,42 46,30 C44,40 40,46 32,46 C24,46 20,40 18,30 Z" fill="#c84f19"/>
-      {/* cache-oeil */}
-      <rect x="18" y="24" width="28" height="6" rx="3" fill="#101623"/>
-      <circle cx="24" cy="27" r="5" fill="#101623"/>
+      <path d="M18,30 C18,42 46,42 46,30 C44,40 40,48 32,48 C24,48 20,40 18,30 Z" fill="#c84f19"/>
+      {/* bandeau + cache-oeil côté gauche */}
+      <rect x="16" y="24" width="32" height="6" rx="3" fill="#101623"/>
+      <circle cx="22" cy="27" r="6" fill="#101623"/>
+      {/* œil libre côté droit */}
+      <circle cx="42" cy="27" r="4.2" fill="#BBD2E1"/>
+      <circle cx="42" cy="27" r="1.6" fill="#0e1320"/>
       {/* sabre */}
-      <path d="M8 57 L28 37" stroke="#c0c7d1" strokeWidth="5" strokeLinecap="round"/>
-      <path d="M28 37 L34 43" stroke="#aab1bb" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M6 59 L10 55" stroke="#8c4912" strokeWidth="6" strokeLinecap="round"/>
+      <path d="M6 60 L28 38" stroke="#c0c7d1" strokeWidth="6" strokeLinecap="round"/>
+      <path d="M28 38 L35 45" stroke="#aab1bb" strokeWidth="5" strokeLinecap="round"/>
+      <path d="M5 62 L11 56" stroke="#8c4912" strokeWidth="7" strokeLinecap="round"/>
     </svg>
   )
 }
 
-// FX “slash” : coupe l’affiche en deux (si pas d’affiche, on slash le bloc titre)
-function SlashFX({ img, title, height=160 }: { img?: string; title: string; height?: number }) {
-  const H = Math.max(140, Math.min(220, height))
+// FX “slash” (poster coupé en 2) — ralenti x2.5 (durée 1.25s)
+function SlashFX({ img, title, height=200 }: { img?: string; title: string; height?: number }) {
+  const H = Math.max(170, Math.min(260, height))
   const W = Math.round(H * 0.67)
+  const D = 1.25 // secondes (x2.5 vs 0.5)
+
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30">
       <div className="relative" style={{ width: W, height: H }}>
         <AnimatePresence>
           {img ? (
             <>
-              {/* moitié gauche */}
               <motion.img
                 key="left"
                 src={img}
-                initial={{ x: 0, rotate: 0 }}
-                animate={{ x: -26, rotate: -8 }}
+                initial={{ x: 0, rotate: 0, opacity: 1 }}
+                animate={{ x: -32, rotate: -8, opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                style={{ width: W, height: H, objectFit: 'cover', clipPath: 'inset(0 50% 0 0)', borderRadius: 12, boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
+                transition={{ duration: D, ease: 'easeOut' }}
+                style={{ width: W, height: H, objectFit: 'cover', clipPath: 'inset(0 50% 0 0)', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,.22)' }}
               />
-              {/* moitié droite */}
               <motion.img
                 key="right"
                 src={img}
-                initial={{ x: 0, rotate: 0 }}
-                animate={{ x: 26, rotate: 8 }}
+                initial={{ x: 0, rotate: 0, opacity: 1 }}
+                animate={{ x: 32, rotate: 8, opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                style={{ width: W, height: H, objectFit: 'cover', clipPath: 'inset(0 0 0 50%)', borderRadius: 12, boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
+                transition={{ duration: D, ease: 'easeOut' }}
+                style={{ width: W, height: H, objectFit: 'cover', clipPath: 'inset(0 0 0 50%)', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,.22)' }}
               />
             </>
           ) : (
             <>
               <motion.div
                 initial={{ x: 0, rotate: 0 }}
-                animate={{ x: -20, rotate: -6 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
+                animate={{ x: -26, rotate: -6 }}
+                transition={{ duration: D, ease: 'easeOut' }}
                 className="bg-candy-100 text-candy-700 font-semibold grid place-items-center text-center"
-                style={{ width: W, height: H, clipPath: 'inset(0 50% 0 0)', borderRadius: 12, padding: 8 }}
+                style={{ width: W, height: H, clipPath: 'inset(0 50% 0 0)', borderRadius: 14, padding: 10 }}
               >
                 <span className="text-xs">{title}</span>
               </motion.div>
               <motion.div
                 initial={{ x: 0, rotate: 0 }}
-                animate={{ x: 20, rotate: 6 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
+                animate={{ x: 26, rotate: 6 }}
+                transition={{ duration: D, ease: 'easeOut' }}
                 className="bg-candy-100 text-candy-700 font-semibold grid place-items-center text-center"
-                style={{ width: W, height: H, clipPath: 'inset(0 0 0 50%)', borderRadius: 12, padding: 8 }}
+                style={{ width: W, height: H, clipPath: 'inset(0 0 0 50%)', borderRadius: 14, padding: 10 }}
               >
                 <span className="text-xs">{title}</span>
               </motion.div>
             </>
           )}
-          {/* pirate qui traverse en diagonale */}
+          {/* pirate ralenti */}
           <motion.div
             key="pirate"
-            initial={{ x: -W, y: H/2, rotate: -20, opacity: 0.9 }}
+            initial={{ x: -W, y: H/2, rotate: -20, opacity: 0.95 }}
             animate={{ x: W, y: -H/2, rotate: -20, opacity: 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: D, ease: 'easeOut' }}
             className="absolute"
             style={{ left: '50%', top: '50%', transform: 'translate(-50%,-50%)' }}
           >
@@ -136,15 +140,16 @@ export default function Reel({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLDivElement | null>(null)
 
-  // hauteur d’un item (affiche) responsive → lisible sur mobile
-  const [ITEM_H, setITEM_H] = useState( Math.max(150, Math.min(210, Math.round(window.innerWidth * 0.45))) )
+  // Posters plus grands, responsive (verrouillés pendant le spin)
+  const [ITEM_H, setITEM_H] = useState(Math.max(180, Math.min(260, Math.round(window.innerWidth * 0.6))))
   useEffect(() => {
-    const onR = () => setITEM_H(Math.max(150, Math.min(210, Math.round(window.innerWidth * 0.45))))
+    if (spinning) return // on ne bouge pas la hauteur pendant l’anim
+    const onR = () => setITEM_H(Math.max(180, Math.min(260, Math.round(window.innerWidth * 0.6))))
     window.addEventListener('resize', onR)
     return () => window.removeEventListener('resize', onR)
-  }, [])
+  }, [spinning])
 
-  const CONTAINER_H = Math.round(ITEM_H * 2.6) // zone visible
+  const CONTAINER_H = Math.round(ITEM_H * 2.6)
   const RENDER_LOOPS = 20
 
   const rendered = useMemo(() => {
@@ -157,18 +162,36 @@ export default function Reel({
   function resetTransform(offset: number) {
     if (!listRef.current) return
     listRef.current.style.transition = 'none'
-    listRef.current.style.transform = `translateY(-${offset}px)` // aligne le centre item sur la ligne centrale dès le départ
+    listRef.current.style.transform = `translateY(-${offset}px)` // aligne centre item sur la ligne centrale
     // reflow
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     listRef.current.offsetHeight
   }
 
   function fireworks() {
-    const end = Date.now() + 900
+    const end = Date.now() + 1200
     ;(function frame() {
       confetti({ particleCount: 28, spread: 70, startVelocity: 36, origin: { y: 0.6 } })
       if (Date.now() < end) requestAnimationFrame(frame)
     })()
+  }
+
+  // calcule l’index réellement centré à partir du transform final
+  function winnerFromTransform(finalTranslateY: number, spinH: number, centerOffset: number) {
+    // translateY = -(distance + centerOffset)
+    const traveled = Math.max(0, -(finalTranslateY) - centerOffset)
+    const rows = Math.round(traveled / spinH)
+    const idx = ((rows % base.length) + base.length) % base.length
+    return base[idx]
+  }
+
+  function getCurrentTranslateY(el: HTMLElement) {
+    const st = window.getComputedStyle(el)
+    const t = st.transform
+    if (!t || t === 'none') return 0
+    // DOMMatrixReadOnly est supporté large
+    const m = new DOMMatrixReadOnly(t)
+    return m.m42 // translateY
   }
 
   function spin() {
@@ -176,34 +199,41 @@ export default function Reel({
     setWinner(null)
     setSpinning(true)
 
-    const containerH = containerRef.current?.clientHeight || CONTAINER_H
-    const centerOffset = (containerH / 2) - (ITEM_H / 2) // ➜ corrige l’alignement sur la ligne centrale
+    // verrouille la hauteur pour tout le spin
+    const spinH = ITEM_H
 
-    // remet au point de départ *centré*
+    const containerH = containerRef.current?.clientHeight || CONTAINER_H
+    const centerOffset = (containerH / 2) - (spinH / 2)
+
+    // reset centré
     resetTransform(centerOffset)
 
-    // choix gagnant
+    // choix gagnant "théorique"
     const winIndex = Math.floor(Math.random() * base.length)
     const LOOPS = 14
     const targetRows = LOOPS * base.length + winIndex
-    const distance = targetRows * ITEM_H // déplacement cumulé des lignes
+    const distance = targetRows * spinH
 
     requestAnimationFrame(() => {
       if (!listRef.current) return
-      const duration = 3.6
+      const duration = 3.6 // on garde la même vitesse de défilement
       listRef.current.style.transition = `transform ${duration}s cubic-bezier(.12,.6,.05,1)`
       listRef.current.style.transform = `translateY(-${distance + centerOffset}px)`
-      // fin de scroll
+
+      // à la fin…
       setTimeout(() => {
-        const w = base[winIndex]
+        const el = listRef.current!
+        // on lit la position réelle (prise en compte des arrondis)
+        const ty = getCurrentTranslateY(el)
+        const w = winnerFromTransform(ty, spinH, centerOffset)
         setWinner(w)
         fireworks()
-        // laisse jouer le slash FX, puis notifie le parent pour ouvrir la fiche
+        // laisse le pirate couper (1.25s) puis ouvre la fiche en douceur
         setTimeout(() => {
           onFinish({ itemId: w.itemId, tmdb_id: w.tmdb_id, title: w.title })
           setSpinning(false)
-        }, 700)
-      }, duration * 1000 + 50)
+        }, 1250)
+      }, duration * 1000 + 60)
     })
   }
 
@@ -218,10 +248,10 @@ export default function Reel({
           {/* masques top/bottom */}
           <div className="pointer-events-none absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10" />
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10" />
-          {/* ligne de sélection */}
+          {/* ligne centrale */}
           <div className="pointer-events-none absolute top-1/2 left-0 right-0 -translate-y-1/2 border-y-2 border-candy-300/60 z-10" />
 
-          {/* liste qui défile */}
+          {/* liste */}
           <div ref={listRef}>
             {rendered.map((e, i) => (
               <div key={i} className="grid place-items-center" style={{ height: ITEM_H }}>
@@ -245,7 +275,7 @@ export default function Reel({
             ))}
           </div>
 
-          {/* FX slash sur le gagnant */}
+          {/* FX slash sur le gagnant (calé au centre) */}
           <AnimatePresence>
             {winner && (
               <motion.div
@@ -253,7 +283,7 @@ export default function Reel({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.25 }}
                 className="absolute inset-0"
               >
                 <SlashFX img={winner.img} title={winner.title} height={ITEM_H - 10} />

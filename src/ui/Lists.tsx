@@ -12,7 +12,7 @@ const PARTNER_UID = import.meta.env.VITE_PARTNER_UID as string | undefined
 export default function Lists() {
   const [lists, setLists] = useState<List[]>([])
   const [name, setName] = useState('')
-  const [type, setType] = useState<'movies'|'activities'>('movies')
+  const [type, setType] = useState<'movies'|'activities'|'courses'>('movies')
   const [partnerId, setPartnerId] = useState(PARTNER_UID ?? localStorage.getItem('partner_uid') ?? '')
   const [toDelete, setToDelete] = useState<List | null>(null)
   const [busy, setBusy] = useState(false)
@@ -36,6 +36,7 @@ export default function Lists() {
           <select className="rounded-2xl border px-4 py-3" value={type} onChange={e=>setType(e.target.value as any)}>
             <option value="movies">Films</option>
             <option value="activities">Activités</option>
+            <option value="courses">Courses</option>
           </select>
           <button className="btn w-full">Créer</button>
         </form>

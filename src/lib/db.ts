@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { List, Item } from './types'
+import type { List, Item, Poem } from './types'
 
 export async function getMe() {
   const { data } = await supabase.auth.getUser();
@@ -11,7 +11,7 @@ export async function ensureOwnerIsMember(listId: string, userId: string) {
   await supabase.from('list_members').upsert({ list_id: listId, user_id: userId }).throwOnError()
 }
 
-export async function createList(name: string, type: 'movies'|'activities', partnerUid?: string): Promise<List> {
+export async function createList(name: string, type: 'movies'|'activities'|'courses', partnerUid?: string): Promise<List> {
   const me = await getMe()
   const { data, error } = await supabase.from('lists').insert({ name, type, owner_id: me.id }).select('*').single()
   if (error) throw error
@@ -85,8 +85,54 @@ export async function deleteList(listId: string){
   const { error } = await supabase.from('lists').delete().eq('id', listId)
   if (error) throw error
 }
+
 export async function deleteItem(itemId: string){
   const { error } = await supabase.from('items').delete().eq('id', itemId)
   if (error) throw error
 }
 
+export async function addCourseItem(listId: string, title: string, qty?: number|null, unit?: string|null) {
+  const { error } = await supabase.from('items').insert({
+    list_id: listId, title, qty: qty ?? null, unit: unit ?? null, status: 'todo'
+  })
+  if (error) throw error
+}
+
+// POEMS
+export async function listPublishedPoems(author?: 'buddy'|'camelia'|'all'): Promise<Poem[]> {
+  let q = supabase.from('poems').select('*').eq('is_published', true).order('created_at', { ascending: false })
+  if (author && author !== 'all') {
+    // filtre par display_name dans profiles ou par email → fais simple: jointure côté client après fetch
+  }
+  const { data, error } = await q
+  if (error) throw error
+  return data as Poem[]
+}
+
+export async function listMyDrafts(): Promise<Poem[]> {
+  const me = await getMe()
+  const { data, error } = await supabase.from('poems').select('*').eq('author_id', me.id).eq('is_published', false).order('updated_at', { ascending: false })
+  if (error) throw error
+  return data as Poem[]
+}
+
+export async function createPoem(title: string): Promise<Poem> {
+  const me = await getMe()
+  const { data, error } = await supabase.from('poems').insert({ author_id: me.id, title, content: '' }).select('*').single()
+  if (error) throw error
+  return data as Poem
+}
+
+export async function updatePoem(id: string, patch: Partial<Pick<Poem,'title'|'content'|'is_published'>>){
+  const { error } = await supabase.from('poems').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function publishPoem(id: string){
+  await updatePoem(id, { is_published: true })
+}
+
+export async function deletePoem(id: string){
+  const { error } = await supabase.from('poems').delete().eq('id', id)
+  if (error) throw error
+}

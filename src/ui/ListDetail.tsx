@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
 import {
   getList, listItems, addActivityItem, addMovieItem,
-  markDone, updateItem, deleteItem
+  markDone, updateItem, deleteItem, addCourseItem
 } from '../lib/db'
 import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
@@ -42,6 +42,9 @@ export default function ListDetail() {
   const [detailItem, setDetailItem] = useState<Item|null>(null)
   const [editingGeo, setEditingGeo] = useState<Item|null>(null)
   const [meEmail, setMeEmail] = useState<string|null>(null)
+  const [courseTitle, setCourseTitle] = useState('')
+  const [qty, setQty] = useState<number | ''>('')
+  const [unit, setUnit] = useState('')
 
   // suppression item
   const [toDeleteItem, setToDeleteItem] = useState<Item | null>(null)
@@ -85,6 +88,13 @@ export default function ListDetail() {
     setTitle(''); setNotes('');
     setItems(await listItems(id))
   }
+  async function addCourse(e: React.FormEvent) {
+  e.preventDefault()
+    if (!id || !courseTitle.trim()) return
+    await addCourseItem(id, courseTitle.trim(), qty === '' ? null : Number(qty), unit || null)
+    setCourseTitle(''); setQty(''); setUnit('')
+    setItems(await listItems(id))
+  }
   async function addMovie(m: TmdbMovie) {
     if (!id) return
     await addMovieItem(id, m.id, m.title)
@@ -106,6 +116,18 @@ export default function ListDetail() {
 
   const showBigWheelBtn =
     list.type === 'movies' && items.filter(i => i.status === 'todo').length >= 2
+  
+  const orderedItems = items.slice().sort((a, b) => {
+    // 1) d'abord les TODO, ensuite les DONE
+    if (a.status !== b.status) return a.status === 'done' ? 1 : -1
+
+    // 2) si tu es sur une liste de films, trie par date (when_at ou created_at), puis titre
+    const ad = (a.when_at ?? a.created_at ?? '')
+    const bd = (b.when_at ?? b.created_at ?? '')
+    if (ad !== bd) return bd.localeCompare(ad)
+
+  return (a.title ?? '').localeCompare(b.title ?? '')
+})
 
   return (
     <div className="grid gap-4">
@@ -114,6 +136,33 @@ export default function ListDetail() {
           {list.name} <small className="opacity-60 font-normal">({list.type})</small>
         </h2>
       </header>
+      {list?.type === 'courses' && (
+        <section className="card">
+          <h3 className="font-bold mb-2">Nouvel article</h3>
+          <form onSubmit={addCourse} className="grid gap-2">
+            <input
+              className="rounded-2xl border px-3 py-3"
+              value={courseTitle}
+              onChange={e=>setCourseTitle(e.target.value)}
+              placeholder="Ex: Lait"
+              required
+            />
+            <div className="flex gap-2">
+              <input className="flex-1 rounded-2xl border px-3 py-3"
+                    type="number" min="0" step="0.01"
+                    value={qty}
+                    onChange={e=>setQty(e.target.value===''?'':Number(e.target.value))}
+                    placeholder="Qté" />
+              <input className="flex-1 rounded-2xl border px-3 py-3"
+                    value={unit}
+                    onChange={e=>setUnit(e.target.value)}
+                    placeholder="Unité (L, kg, boîte…)" />
+            </div>
+            <button className="btn w-full">Ajouter</button>
+          </form>
+        </section>
+      )}
+
 
       {list.type === 'activities' && (
         <section className="card">
@@ -153,79 +202,112 @@ export default function ListDetail() {
       <section>
         <h3 className="font-bold mb-2">Éléments</h3>
         <div className="grid grid-cols-1 gap-3">
-          {items.map(it => (
-            <div
-              key={it.id}
-              className={`card relative hover:animate-bounceSoft ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
-            >
-              {/* croix suppression */}
-              <button
-                className="icon-btn absolute top-2 right-2"
-                title="Supprimer l’élément"
-                onClick={()=> setToDeleteItem(it)}
-              >✕</button>
+          {orderedItems.map(it => (
+            list?.type === 'courses' ? (
+              // --- RENDU SPÉCIAL COURSES (case à cocher + qté/unité) ---
+              <label
+                key={it.id}
+                className={`card relative flex items-center gap-3 ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
+              >
+                {/* checkbox done/todo */}
+                <input
+                  type="checkbox"
+                  className="w-5 h-5"
+                  checked={it.status === 'done'}
+                  onChange={() => it.status==='done' ? remise(it.id) : markAsDone(it)}
+                  title={it.status==='done' ? 'Remettre en TODO' : 'Marquer fait'}
+                />
 
-              <div className="flex gap-3">
-                {it.tmdb_id ? <Poster id={it.tmdb_id}/> : null}
                 <div className="flex-1">
                   <div className="font-bold">{it.title}</div>
-
-                  {it.notes && (
-                    <div className="text-sm opacity-75 mt-1">
-                      {it.notes}
+                  {(it.qty || it.unit) && (
+                    <div className="text-sm opacity-70 mt-1">
+                      {it.qty ?? ''} {it.unit ?? ''}
                     </div>
                   )}
+                </div>
 
-                  {it.status==='done' ? (
-                    <div className="text-sm mt-1">
-                      ✅ {it.when_at?.slice(0,10)} — {it.rating? `${it.rating}/10` : 'sans note'} {it.review? ` — ${it.review}`:''}
-                    </div>
-                  ) : <div className="text-sm opacity-60">À voir / faire</div>}
+                {/* croix suppression */}
+                <button
+                  className="icon-btn absolute top-2 right-2"
+                  title="Supprimer l’élément"
+                  onClick={()=> setToDeleteItem(it)}
+                >✕</button>
+              </label>
+            ) : (
+              <div
+                key={it.id}
+                className={`card relative hover:animate-bounceSoft ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
+              >
+                {/* croix suppression */}
+                <button
+                  className="icon-btn absolute top-2 right-2"
+                  title="Supprimer l’élément"
+                  onClick={()=> setToDeleteItem(it)}
+                >✕</button>
 
-                  {it.location && (it.location.buddy || it.location.camelia) && (
-                    <div className="text-xs opacity-70 mt-1">
-                      📍 {it.location.buddy ? `Buddy: ${it.location.buddy.lat.toFixed(2)}, ${it.location.buddy.lng.toFixed(2)}` : 'Buddy: —'}
-                      {' · '}
-                      {it.location.camelia ? `Camélia: ${it.location.camelia.lat.toFixed(2)}, ${it.location.camelia.lng.toFixed(2)}` : 'Camélia: —'}
-                    </div>
-                  )}
+                <div className="flex gap-3">
+                  {it.tmdb_id ? <Poster id={it.tmdb_id}/> : null}
+                  <div className="flex-1">
+                    <div className="font-bold">{it.title}</div>
 
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {it.tmdb_id && (
-                      <button
-                        onClick={() => setDetailItem(it)}
-                        className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-500 hover:bg-candy-600 shadow-candy active:scale-95 transition"
-                      >
-                        Détails
-                      </button>
+                    {it.notes && (
+                      <div className="text-sm opacity-75 mt-1">
+                        {it.notes}
+                      </div>
                     )}
 
-                    {it.status === 'todo' ? (
-                      <button
-                        onClick={() => markAsDone(it)}
-                        className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 shadow-candy active:scale-95 transition"
-                      >
-                        Marquer fait
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => remise(it.id)}
-                        className="rounded-full px-3 py-1.5 text-sm font-semibold bg-white border border-candy-300 text-candy-700 hover:bg-candy-50 shadow-candy active:scale-95 transition"
-                      >
-                        Remettre
-                      </button>
+                    {it.status==='done' ? (
+                      <div className="text-sm mt-1">
+                        ✅ {it.when_at?.slice(0,10)} — {it.rating? `${it.rating}/10` : 'sans note'} {it.review? ` — ${it.review}`:''}
+                      </div>
+                    ) : <div className="text-sm opacity-60">À voir / faire</div>}
+
+                    {it.location && (it.location.buddy || it.location.camelia) && (
+                      <div className="text-xs opacity-70 mt-1">
+                        📍 {it.location.buddy ? `Buddy: ${it.location.buddy.lat.toFixed(2)}, ${it.location.buddy.lng.toFixed(2)}` : 'Buddy: —'}
+                        {' · '}
+                        {it.location.camelia ? `Camélia: ${it.location.camelia.lat.toFixed(2)}, ${it.location.camelia.lng.toFixed(2)}` : 'Camélia: —'}
+                      </div>
                     )}
 
-                    <button
-                      onClick={() => setEditingGeo(it)}
-                      className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-700 hover:bg-candy-800 shadow-candy active:scale-95 transition"
-                    >
-                      Lieux Buddy/Camélia
-                    </button>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {it.tmdb_id && (
+                        <button
+                          onClick={() => setDetailItem(it)}
+                          className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-500 hover:bg-candy-600 shadow-candy active:scale-95 transition"
+                        >
+                          Détails
+                        </button>
+                      )}
+
+                      {it.status === 'todo' ? (
+                        <button
+                          onClick={() => markAsDone(it)}
+                          className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 shadow-candy active:scale-95 transition"
+                        >
+                          Marquer fait
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => remise(it.id)}
+                          className="rounded-full px-3 py-1.5 text-sm font-semibold bg-white border border-candy-300 text-candy-700 hover:bg-candy-50 shadow-candy active:scale-95 transition"
+                        >
+                          Remettre
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setEditingGeo(it)}
+                        className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-700 hover:bg-candy-800 shadow-candy active:scale-95 transition"
+                      >
+                        Lieux Buddy/Camélia
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )
           ))}
           {items.length === 0 && <div className="card opacity-70">Rien pour l’instant.</div>}
         </div>

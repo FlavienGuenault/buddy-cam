@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-const BIRDS_COUNT = 48
-const DELAY_STEP_MS = 50      // écart entre départs
-const DURATION_MS   = 1800    // durée identique → vitesse constante
-const SAFETY_MS     = 8000    // filet de sécurité (au cas où)
+const BIRDS_COUNT = 36
+const DELAY_STEP_MS = 35      // écart entre départs
+const DURATION_MS   = 1200    // durée identique → vitesse constante
+const SAFETY_MS     = (BIRDS_COUNT-1)*DELAY_STEP_MS + DURATION_MS + 1500;     // filet de sécurité (au cas où)
 
 export default function PoemsLayout(){
   const [show, setShow] = useState(true)
@@ -64,7 +64,7 @@ function BirdsOverlay({ onDone }: { onDone: () => void }){
       nodes.forEach(n => n.removeEventListener('animationend', onAnimEnd as any))
     }
   }, [onDone])
-  
+
   return (
     <div className="fixed inset-0 pointer-events-none z-[999] bg-gradient-to-b from-emerald-50/80 to-transparent">
       <div ref={containerRef} className="poem-birds-container">
@@ -79,7 +79,7 @@ function BirdsOverlay({ onDone }: { onDone: () => void }){
             }}
           >
             {/* battement d’ailes (indépendant, mais finit avant la trajectoire) */}
-            <div className="bird" style={{ animationDuration: '900ms' }} />
+            <div className="bird" style={{ animationDuration: '650ms' }} />
           </div>
         ))}
       </div>

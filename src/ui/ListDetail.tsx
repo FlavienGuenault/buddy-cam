@@ -262,12 +262,10 @@ async function clearDone(){
         </section>
       )}
 
-      <section className="overflow-x-hidden space-y-3">
+      <section className="overflow-x-hidden space-y-3 items-section">
         <h3 className="font-bold mb-2">Éléments</h3>
         {list?.type==='courses' && (
-          <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] w-full bg-white/90 backdrop-blur
-                          rounded-3xl border px-3 py-2 flex items-center gap-2 mb-4
-                          overflow-x-auto">            
+          <div className="sticky-menu">            
             <label className="ml-auto flex items-center gap-1 text-sm">
               <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
             </label>
@@ -284,7 +282,7 @@ async function clearDone(){
               // --- RENDU SPÉCIAL COURSES (case à cocher + qté/unité) ---
               <label
                 key={it.id}
-                className={`card relative flex items-center gap-3 ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
+                className={`relative flex items-center gap-3 rounded-3xl border border-candy-100 bg-white px-3 py-2 shadow-none ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
               >
                 {/* stepper qty */}
                 <div className="flex items-center gap-1">

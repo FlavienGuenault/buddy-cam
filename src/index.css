@@ -92,6 +92,7 @@ body{
   /* A = gauche/bas, B = droite/haut, pas de fade */
   0%   { transform: translate(-12vw, 16vh) scale(.7) rotate(-6deg); }
   100% { transform: translate(130vw, -55vh) scale(1) rotate(3deg); }
+  100% { transform: translate(130vw, -55vh) scale(1) rotate(3deg); }
 }
 
 /* Fallback logo */

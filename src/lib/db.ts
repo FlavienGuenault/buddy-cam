@@ -136,3 +136,9 @@ export async function deletePoem(id: string){
   const { error } = await supabase.from('poems').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function getPoemById(id:string){
+  const { data, error } = await supabase.from('poems').select('*').eq('id', id).single()
+  if (error) throw error
+  return data as Poem
+}

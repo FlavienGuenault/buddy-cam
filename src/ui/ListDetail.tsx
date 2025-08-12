@@ -137,27 +137,34 @@ export default function ListDetail() {
         </h2>
       </header>
       {list?.type === 'courses' && (
-        <section className="card">
-          <h3 className="font-bold mb-2">Nouvel article</h3>
-          <form onSubmit={addCourse} className="grid gap-2">
+        <section className="card p-0">
+          <form onSubmit={addCourse} className="grid gap-3 p-3">
+            <h3 className="font-bold">Nouvel article</h3>
+
             <input
-              className="rounded-2xl border px-3 py-3"
+              className="w-full rounded-2xl border px-4 py-3"
               value={courseTitle}
               onChange={e=>setCourseTitle(e.target.value)}
               placeholder="Ex: Lait"
               required
             />
-            <div className="flex gap-2">
-              <input className="flex-1 rounded-2xl border px-3 py-3"
-                    type="number" min="0" step="0.01"
-                    value={qty}
-                    onChange={e=>setQty(e.target.value===''?'':Number(e.target.value))}
-                    placeholder="Qté" />
-              <input className="flex-1 rounded-2xl border px-3 py-3"
-                    value={unit}
-                    onChange={e=>setUnit(e.target.value)}
-                    placeholder="Unité (L, kg, boîte…)" />
+
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="w-full rounded-2xl border px-4 py-3"
+                type="number" min="0" step="0.01"
+                value={qty}
+                onChange={e=>setQty(e.target.value===''?'':Number(e.target.value))}
+                placeholder="Qté"
+              />
+              <input
+                className="w-full rounded-2xl border px-4 py-3"
+                value={unit}
+                onChange={e=>setUnit(e.target.value)}
+                placeholder="Unité (L, kg, boîte…)"
+              />
             </div>
+
             <button className="btn w-full">Ajouter</button>
           </form>
         </section>

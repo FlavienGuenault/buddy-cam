@@ -29,6 +29,12 @@ export default function Lists() {
 
   return (
     <div className="grid gap-4">
+      <div className="flex items-center">
+      <div className="text-sm opacity-70">Espace</div>
+        <Link to="/poems" className="ml-auto rounded-2xl bg-candy-600 text-white px-4 py-2 shadow-candy active:scale-95 transition">
+          ✍️ Poèmes
+        </Link>
+      </div>
       <section className="card">
         <h2 className="font-black text-candy-700 mb-2">Créer une liste</h2>
         <form onSubmit={onCreate} className="grid gap-2">

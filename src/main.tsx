@@ -22,6 +22,7 @@ const router = createBrowserRouter([
     // --- AJOUT ROUTES POÈMES ---
     { path: '/poems', element: <PoemsList /> },
     { path: '/poems/new', element: <PoemEditor /> },
+    { path: '/poems/edit/:id', element: <PoemEditor /> },
     { path: '/poems/:id', element: <PoemView /> },
   ]},
   { path: '/login', element: <Login /> }

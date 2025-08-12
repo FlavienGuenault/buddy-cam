@@ -84,7 +84,7 @@ body{
   transform: translate3d(0,0,0) scale(.75);
   will-change: transform;
   animation-name: fly-diagonal;
-  animation-timing-function: linear;   /* vitesse constante */
+  animation-timing-function: linear;   /* constant */
   animation-fill-mode: both;
 }
 

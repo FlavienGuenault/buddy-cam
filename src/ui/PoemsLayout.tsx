@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+
+const BIRDS_COUNT = 48
+const DELAY_STEP_MS = 50      // écart entre départs
+const DURATION_MS   = 1800    // durée identique → vitesse constante
+const SAFETY_MS     = 8000    // filet de sécurité (au cas où)
 
 export default function PoemsLayout(){
   const [show, setShow] = useState(true)
@@ -7,52 +12,75 @@ export default function PoemsLayout(){
   useEffect(() => {
     const root = document.documentElement
     root.classList.add('poems-theme')
-    const t = setTimeout(()=>setShow(false), 1400) // durée de l’anim
-    return () => { root.classList.remove('poems-theme'); clearTimeout(t) }
+    return () => { root.classList.remove('poems-theme') }
   }, [])
 
   return (
     <div className="min-h-screen">
-      {show && <BirdsOverlay/>}
+      {show && <BirdsOverlay onDone={()=>setShow(false)} />}
       <Outlet />
     </div>
   )
 }
 
-function BirdsOverlay(){
+function BirdsOverlay({ onDone }: { onDone: () => void }){
   const logoUrl = `${import.meta.env.BASE_URL}pwa-192x192.png`
+  const containerRef = useRef<HTMLDivElement>(null)
+  const doneRef = useRef(false)
 
-  const birds = Array.from({ length: 48 }).map((_, i) => {
-    // top entre 0% et 80% => couvre vraiment tout l’écran
-    const top = `${Math.round(Math.random()*80)}%`
-    const delayMs = i * 60  // étalement
-    const dur = 1.45 + (Math.random()*0.6) // 1.45s - 2.05s
-    const wing = 0.92 + (Math.random()*0.25) // battement
-    return { i, top, delayMs, dur, wing }
-  })
+  const birds = useMemo(() => {
+    return Array.from({ length: BIRDS_COUNT }).map((_, i) => {
+      const top = `${Math.round(Math.random()*80)}%` // couvre haut/bas
+      const delayMs = i * DELAY_STEP_MS
+      return { i, top, delayMs }
+    })
+  }, [])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const nodes = Array.from(el.querySelectorAll('.bird-container'))
+    let finished = 0
+
+    const onAnimEnd = () => {
+      finished += 1
+      if (!doneRef.current && finished >= nodes.length) {
+        doneRef.current = true
+        // petite marge pour s’assurer qu’ils sont bien sortis
+        setTimeout(onDone, 120)
+      }
+    }
+
+    nodes.forEach(n => n.addEventListener('animationend', onAnimEnd))
+    const safety = setTimeout(() => { if (!doneRef.current) onDone() }, SAFETY_MS)
+
+    return () => {
+      clearTimeout(safety)
+      nodes.forEach(n => n.removeEventListener('animationend', onAnimEnd))
+    }
+  }, [onDone])
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[999] bg-gradient-to-b from-emerald-50/80 to-transparent">
-      <div className="poem-birds-container">
-        {birds.map(({ i, top, delayMs, dur, wing }) => (
+      <div ref={containerRef} className="poem-birds-container">
+        {birds.map(({ i, top, delayMs }) => (
           <div
             key={i}
             className="bird-container"
             style={{
               top, left: '-18vw',
               animationDelay: `${delayMs}ms`,
-              animationDuration: `${dur}s`,
+              animationDuration: `${DURATION_MS}ms`,
             }}
           >
-            <div
-              className="bird"
-              style={{ animationDuration: `${wing}s` }}
-            />
+            {/* battement d’ailes (indépendant, mais finit avant la trajectoire) */}
+            <div className="bird" style={{ animationDuration: '900ms' }} />
           </div>
         ))}
       </div>
 
-      {/* Fallback logo si réduction des mouvements */}
+      {/* Fallback logo si reduce motion */}
       <div className="logo-container">
         <img src={logoUrl} className="logo-rise" alt="logo"/>
       </div>

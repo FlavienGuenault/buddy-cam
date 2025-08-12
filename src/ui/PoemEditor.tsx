@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createPoem, updatePoem, publishPoem, deletePoem, getPoemById } from '../lib/db'
+import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
@@ -74,8 +75,8 @@ export default function PoemEditor(){
   return (
     <div className="container grid gap-3">
       <h2 className="font-black text-candy-700">{isEditing ? 'Modifier le poème' : 'Nouveau poème'}</h2>
-      <div className="mb-1">
-        <a href="/poems" className="text-sm opacity-70 hover:opacity-100">← Retour aux poèmes</a>
+      <div className="mb-2">
+        <Link to="/poems" className="text-sm opacity-70 hover:opacity-100">← Retour aux poèmes</Link>
       </div>
 
       <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+38px)] z-[2000]">

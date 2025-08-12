@@ -262,13 +262,10 @@ async function clearDone(){
         </section>
       )}
 
-      <section>
+      <section className="overflow-x-hidden">
         <h3 className="font-bold mb-2">Éléments</h3>
         {list?.type==='courses' && (
           <div className="sticky top-[calc(env(safe-area-inset-top)+8px)] z-[9] w-full bg-white/90 backdrop-blur rounded-2xl border px-3 py-2 flex items-center gap-2 mb-2 overflow-x-auto overscroll-x-contain">
-            <span className="text-sm opacity-70">
-              {items.filter(x=>x.status==='todo').length} à acheter · {items.filter(x=>x.status==='done').length} faits
-            </span>
             <label className="ml-auto flex items-center gap-1 text-sm">
               <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
             </label>

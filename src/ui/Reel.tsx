@@ -110,7 +110,7 @@ function PirateSVG() {
 function SlashFX({ img, title, height=200 }: { img?: string; title: string; height?: number }) {
   const H = Math.max(170, Math.min(260, height))
   const W = Math.round(H * 0.67)
-  const D = 1 // secondes
+  const D = 1    // secondes
 
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30">
@@ -278,10 +278,11 @@ export default function Reel({
         setWinner(w)
         fireworks()
         // laisse le pirate couper (3.75s), puis onFinish
+        const AFTER_WIN_MS = 1750
         setTimeout(() => {
-          onFinish({ itemId: w.itemId, tmdb_id: w.tmdb_id, title: w.title })
-          setSpinning(false)
-        }, 3750)
+        onFinish({ itemId: w.itemId, tmdb_id: w.tmdb_id, title: w.title })
+        setSpinning(false)
+        }, AFTER_WIN_MS)
       }, duration * 1000 + 80)
     })
   }

@@ -4,6 +4,8 @@ import { myLists, createList } from '../lib/db'
 import type { List } from '../lib/types'
 import ListPreview from './ListPreview'
 import InlinePosters from './InlinePosters'
+import ConfirmModal from './ConfirmModal'
+import { deleteList } from '../lib/db'
 
 
 const PARTNER_UID = import.meta.env.VITE_PARTNER_UID as string | undefined
@@ -13,6 +15,8 @@ export default function Lists() {
   const [name, setName] = useState('')
   const [type, setType] = useState<'movies'|'activities'>('movies')
   const [partnerId, setPartnerId] = useState(PARTNER_UID ?? localStorage.getItem('partner_uid') ?? '')
+  const [toDelete, setToDelete] = useState<List | null>(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => { load() }, [])
   async function load() { const d = await myLists(); setLists(d) }
@@ -44,19 +48,47 @@ export default function Lists() {
         {lists.length === 0 ? <p className="opacity-70">Aucune liste pour l’instant.</p> : (
           <div className="grid gap-3">
             {lists.map(l => (
-             <Link key={l.id} to={`/list/${l.id}`} className="card block hover:animate-bounceSoft">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{l.name}</div>
-                  <div className="text-xs opacity-60">{l.type}</div>
-                </div>
-                {l.type === 'movies' && <InlinePosters listId={l.id} />}
+             <div key={l.id} className="card relative hover:animate-bounceSoft">
+                {/* bouton croix */}
+                <button
+                  className="icon-btn absolute top-2 right-2"
+                  title="Supprimer la liste"
+                  onClick={(e)=>{ e.stopPropagation(); setToDelete(l) }}
+                >
+                  ✕
+                </button>
+
+                <Link to={`/list/${l.id}`} className="block">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">{l.name}</div>
+                      <div className="text-xs opacity-60">{l.type}</div>
+                    </div>
+                    {l.type === 'movies' && <InlinePosters listId={l.id} />}
+                  </div>
+                </Link>
               </div>
-            </Link>
             ))}
           </div>
         )}
       </section>
+      <ConfirmModal
+        open={!!toDelete}
+        title="Supprimer la liste ?"
+        message={toDelete ? <>La liste <b>{toDelete.name}</b> et tous ses éléments seront supprimés.</> : ''}
+        confirmLabel={busy ? '…' : 'Supprimer'}
+        onCancel={()=>setToDelete(null)}
+        onConfirm={async ()=>{
+          if(!toDelete) return
+          try{
+            setBusy(true)
+            await deleteList(toDelete.id)
+            setLists(prev => prev.filter(x => x.id !== toDelete.id))
+            setToDelete(null)
+          }catch(err:any){ alert(err.message || 'Suppression impossible (droits ?)') }
+          finally{ setBusy(false) }
+        }}
+      />
     </div>
   )
 }

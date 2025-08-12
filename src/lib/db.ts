@@ -80,3 +80,13 @@ export async function listMovieIds(listId: string, limit = 4): Promise<number[]>
   if (error) throw error
   return (data ?? []).map((r: any) => r.tmdb_id as number)
 }
+
+export async function deleteList(listId: string){
+  const { error } = await supabase.from('lists').delete().eq('id', listId)
+  if (error) throw error
+}
+export async function deleteItem(itemId: string){
+  const { error } = await supabase.from('items').delete().eq('id', itemId)
+  if (error) throw error
+}
+

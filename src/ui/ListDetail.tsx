@@ -1,20 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
-import { getList, listItems, addActivityItem, addMovieItem, markDone, updateItem } from '../lib/db'
+import {
+  getList, listItems, addActivityItem, addMovieItem,
+  markDone, updateItem, deleteItem
+} from '../lib/db'
 import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
 import { supabase } from '../lib/supabase'
+
 import Wheel from './Wheel'
 import MovieSheet from './MovieSheet'
 import MapPicker from './MapPicker'
 import FancyWheelButton from './FancyWheelButton'
+import ConfirmModal from './ConfirmModal'
+import CandyButton from './CandyButton'
 
 function whoAmI(email?: string|null): 'Buddy'|'Camélia'|'Autre' {
   if (!email) return 'Autre'
   const e = email.toLowerCase()
   if (e.startsWith('flavien')) return 'Buddy'
-  if (e.startsWith('louane')) return 'Camélia'
+  if (e.startsWith('louane'))  return 'Camélia'
   return 'Autre'
 }
 
@@ -33,11 +39,14 @@ export default function ListDetail() {
   const debounceRef = useRef<number | undefined>(undefined)
 
   // UI
-  const [attendeesMode, setAttendeesMode] = useState<'nous'|'moi'|'elle'>('nous')
   const [showWheel, setShowWheel] = useState(false)
   const [detailItem, setDetailItem] = useState<Item|null>(null)
   const [editingGeo, setEditingGeo] = useState<Item|null>(null)
   const [meEmail, setMeEmail] = useState<string|null>(null)
+
+  // suppression item
+  const [toDeleteItem, setToDeleteItem] = useState<Item | null>(null)
+  const [busyDelete, setBusyDelete] = useState(false)
 
   useEffect(() => { supabase.auth.getUser().then(u => setMeEmail(u.data.user?.email ?? null)) }, [])
   useEffect(() => { if (id) boot(id) }, [id])
@@ -46,19 +55,20 @@ export default function ListDetail() {
     const d = await listItems(listId); setItems(d)
   }
 
-  // recherche live
+  // recherche live (debounce)
   useEffect(() => {
     window.clearTimeout(debounceRef.current)
     if (!q || q.trim().length < 2) { setSuggests([]); setDropdownOpen(false); return }
     setSearching(true)
     debounceRef.current = window.setTimeout(async () => {
       try { const r = await searchMovies(q.trim()); setSuggests(r.results ?? []); setDropdownOpen(true) }
-      catch { /* noop */ }
+      catch { /* ignore */ }
       finally { setSearching(false) }
     }, 250)
     return () => window.clearTimeout(debounceRef.current)
   }, [q])
 
+  // ferme le dropdown quand on clique ailleurs
   useEffect(() => {
     const close = (e: MouseEvent) => {
       if (!inputRef.current) return
@@ -94,13 +104,16 @@ export default function ListDetail() {
   }
 
   if (!list) return <div className="card">Chargement…</div>
+
   const showBigWheelBtn =
-  list.type === 'movies' && items.filter(i => i.status === 'todo').length >= 2
+    list.type === 'movies' && items.filter(i => i.status === 'todo').length >= 2
 
   return (
     <div className="grid gap-4">
       <header className="flex justify-between items-center">
-        <h2 className="text-2xl font-black text-candy-700">{list.name} <small className="opacity-60 font-normal">({list.type})</small></h2>
+        <h2 className="text-2xl font-black text-candy-700">
+          {list.name} <small className="opacity-60 font-normal">({list.type})</small>
+        </h2>
       </header>
 
       {list.type === 'activities' && (
@@ -118,11 +131,21 @@ export default function ListDetail() {
         <section className="card">
           <h3 className="font-bold mb-2">Ajouter un film (TMDb)</h3>
           <div className="relative">
-            <input ref={inputRef} className="w-full rounded-2xl border px-4 py-3"
-                   value={q} onChange={e=>setQ(e.target.value)} placeholder='Tape pour chercher…' />
+            <input
+              ref={inputRef}
+              className="w-full rounded-2xl border px-4 py-3"
+              value={q}
+              onChange={e=>setQ(e.target.value)}
+              placeholder='Tape pour chercher…'
+            />
           </div>
           {dropdownOpen && inputRef.current && createPortal(
-            <FloatingResults anchor={inputRef.current} searching={searching} suggests={suggests} onPick={m=>addMovie(m)} />,
+            <FloatingResults
+              anchor={inputRef.current}
+              searching={searching}
+              suggests={suggests}
+              onPick={m=>addMovie(m)}
+            />,
             document.body
           )}
         </section>
@@ -132,11 +155,22 @@ export default function ListDetail() {
         <h3 className="font-bold mb-2">Éléments</h3>
         <div className="grid grid-cols-1 gap-3">
           {items.map(it => (
-            <div key={it.id} className={`card hover:animate-bounceSoft ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}>
+            <div
+              key={it.id}
+              className={`card relative hover:animate-bounceSoft ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
+            >
+              {/* croix suppression */}
+              <button
+                className="icon-btn absolute top-2 right-2"
+                title="Supprimer l’élément"
+                onClick={()=> setToDeleteItem(it)}
+              >✕</button>
+
               <div className="flex gap-3">
                 {it.tmdb_id ? <Poster id={it.tmdb_id}/> : null}
                 <div className="flex-1">
                   <div className="font-bold">{it.title}</div>
+
                   {it.status==='done' ? (
                     <div className="text-sm mt-1">
                       ✅ {it.when_at?.slice(0,10)} — {it.rating? `${it.rating}/10` : 'sans note'} {it.review? ` — ${it.review}`:''}
@@ -151,8 +185,10 @@ export default function ListDetail() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-2">
-                    {it.tmdb_id && <button className="btn" onClick={()=> setDetailItem(it)}>Détails</button>}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {it.tmdb_id && (
+                      <CandyButton onClick={()=> setDetailItem(it)}>Détails</CandyButton>
+                    )}
                     {it.status==='todo' ? (
                       <button className="btn-outline" onClick={()=> markAsDone(it)}>Marquer fait</button>
                     ) : (
@@ -166,12 +202,16 @@ export default function ListDetail() {
               </div>
             </div>
           ))}
+          {items.length === 0 && <div className="card opacity-70">Rien pour l’instant.</div>}
         </div>
       </section>
 
       {showWheel && (
-        <Wheel items={items.filter(i=>i.status==='todo').map(i=>({ id:i.id, label:i.title }))}
-          onFinish={()=>{}} onClose={()=>setShowWheel(false)} />
+        <Wheel
+          items={items.filter(i=>i.status==='todo').map(i=>({ id:i.id, label:i.title }))}
+          onFinish={()=>{}}
+          onClose={()=>setShowWheel(false)}
+        />
       )}
 
       {detailItem && detailItem.tmdb_id && (
@@ -199,8 +239,32 @@ export default function ListDetail() {
         />
       )}
 
-      {showBigWheelBtn && <FancyWheelButton offsetPx={80} onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />}
-      {showBigWheelBtn && <div className="h-28" />}
+      {/* bouton roue + spacer pour ne pas gêner le bas */}
+      {showBigWheelBtn && (
+        <>
+          <FancyWheelButton offsetPx={65} onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />
+          <div style={{ height: 28 }} />
+        </>
+      )}
+
+      {/* modal suppression item */}
+      <ConfirmModal
+        open={!!toDeleteItem}
+        title="Supprimer cet élément ?"
+        message={toDeleteItem ? <>« <b>{toDeleteItem.title}</b> » sera supprimé de la liste.</> : ''}
+        confirmLabel={busyDelete ? '…' : 'Supprimer'}
+        onCancel={()=>setToDeleteItem(null)}
+        onConfirm={async ()=>{
+          if(!toDeleteItem) return
+          try{
+            setBusyDelete(true)
+            await deleteItem(toDeleteItem.id)
+            if (id) setItems(await listItems(id))
+            setToDeleteItem(null)
+          }catch(err:any){ alert(err.message || 'Suppression impossible') }
+          finally{ setBusyDelete(false) }
+        }}
+      />
     </div>
   )
 }

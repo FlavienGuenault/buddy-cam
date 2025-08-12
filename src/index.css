@@ -30,4 +30,13 @@ body{
 .animate-shine     { animation: shine 1.8s linear infinite; }
 .animate-pulseGlow { animation: pulseGlow 2.2s ease-in-out infinite; }
 
+.btn-danger{
+  @apply inline-flex items-center gap-2 rounded-2xl px-4 py-2 font-semibold text-white
+         bg-candy-800 hover:bg-candy-900 active:scale-95 transition shadow-candy;
+}
+.icon-btn{
+  @apply w-8 h-8 grid place-items-center rounded-full bg-white text-candy-700
+         border-2 border-candy-300 shadow-candy active:scale-95;
+}
+
 

@@ -44,15 +44,15 @@ export default function Lists() {
         {lists.length === 0 ? <p className="opacity-70">Aucune liste pour l’instant.</p> : (
           <div className="grid gap-3">
             {lists.map(l => (
-              <Link key={l.id} to={`/list/${l.id}`} className="card block hover:animate-bounceSoft">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{l.name}</div>
-                    <div className="text-xs opacity-60">{l.type}</div>
-                  </div>
-                  {l.type === 'movies' && <InlinePosters listId={l.id} />}
+             <Link key={l.id} to={`/list/${l.id}`} className="card block hover:animate-bounceSoft">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{l.name}</div>
+                  <div className="text-xs opacity-60">{l.type}</div>
                 </div>
-              </Link>
+                {l.type === 'movies' && <InlinePosters listId={l.id} />}
+              </div>
+            </Link>
             ))}
           </div>
         )}

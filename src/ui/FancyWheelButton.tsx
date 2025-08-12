@@ -1,9 +1,18 @@
 import { motion } from 'framer-motion'
 
-export default function FancyWheelButton({ onClick }: { onClick: () => void }) {
+export default function FancyWheelButton({
+  onClick,
+  offsetPx = 96, // ← remonte le bouton (ex: 96px au-dessus du bord bas)
+}: {
+  onClick: () => void
+  offsetPx?: number
+}) {
   return (
-    // le wrapper ne capte pas les clics → tu peux scroller dessous
-    <div className="fixed left-1/2 -translate-x-1/2 bottom-[max(20px,env(safe-area-inset-bottom))] z-[1300] pointer-events-none">
+    // le wrapper ne capte pas les clics → le scroll passe derrière
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-[1300] pointer-events-none"
+      style={{ bottom: `calc(max(20px, env(safe-area-inset-bottom)) + ${offsetPx}px)` }}
+    >
       <motion.button
         onClick={onClick}
         initial={{ scale: 0.95 }}

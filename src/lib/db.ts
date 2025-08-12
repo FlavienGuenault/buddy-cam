@@ -68,3 +68,15 @@ export async function updateItem(itemId: string, patch: Partial<Item>) {
   if (error) throw error
   return data as Item
 }
+
+export async function listMovieIds(listId: string, limit = 4): Promise<number[]> {
+  const { data, error } = await supabase
+    .from('items')
+    .select('tmdb_id')
+    .eq('list_id', listId)
+    .not('tmdb_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map((r: any) => r.tmdb_id as number)
+}

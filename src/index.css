@@ -19,3 +19,15 @@ body{
   100% { transform: skewX(-12deg) translateX(120%); }
 }
 
+@keyframes shine {
+  0% { transform: skewX(-12deg) translateX(-120%); }
+  100% { transform: skewX(-12deg) translateX(120%); }
+}
+@keyframes pulseGlow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,79,138,.35); }
+  50%     { box-shadow: 0 0 30px 10px rgba(255,79,138,.22); }
+}
+.animate-shine     { animation: shine 1.8s linear infinite; }
+.animate-pulseGlow { animation: pulseGlow 2.2s ease-in-out infinite; }
+
+

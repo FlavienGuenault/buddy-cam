@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import Wheel from './Wheel'
 import MovieSheet from './MovieSheet'
 import MapPicker from './MapPicker'
+import FancyWheelButton from './FancyWheelButton'
 
 function whoAmI(email?: string|null): 'Buddy'|'Camélia'|'Autre' {
   if (!email) return 'Autre'
@@ -98,18 +99,7 @@ export default function ListDetail() {
     <div className="grid gap-4">
       <header className="flex justify-between items-center">
         <h2 className="text-2xl font-black text-candy-700">{list.name} <small className="opacity-60 font-normal">({list.type})</small></h2>
-        {list.type === 'movies' && <button className="btn-outline" onClick={()=>{ setDropdownOpen(false); setShowWheel(true) }}>🎡 Roue</button>}
       </header>
-
-      <section className="flex gap-3 items-center">
-        <span className="text-sm opacity-70">Présence :</span>
-        <select className="rounded-xl border px-2 py-1"
-          value={attendeesMode} onChange={e=>setAttendeesMode(e.target.value as any)}>
-          <option value='nous'>Nous deux</option>
-          <option value='moi'>Moi</option>
-          <option value='elle'>Camélia/Buddy seul·e</option>
-        </select>
-      </section>
 
       {list.type === 'activities' && (
         <section className="card">
@@ -205,6 +195,9 @@ export default function ListDetail() {
             setEditingGeo(null)
           }}
         />
+      )}
+      {list.type === 'movies' && items.filter(i=>i.status==='todo').length >= 2 && (
+        <FancyWheelButton onClick={()=>{ setDropdownOpen(false); setShowWheel(true) }} />
       )}
     </div>
   )

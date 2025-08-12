@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { myLists, createList } from '../lib/db'
 import type { List } from '../lib/types'
+import ListPreview from './ListPreview'
+
 
 const PARTNER_UID = import.meta.env.VITE_PARTNER_UID as string | undefined
 
@@ -41,9 +43,12 @@ export default function Lists() {
         {lists.length === 0 ? <p className="opacity-70">Aucune liste pour l’instant.</p> : (
           <div className="grid gap-3">
             {lists.map(l => (
-              <Link key={l.id} to={`/list/${l.id}`} className="card block hover:animate-bounceSoft">
-                <div className="font-semibold">{l.name}</div>
-                <div className="text-xs opacity-60">{l.type}</div>
+              <Link key={l.id} to={`/list/${l.id}`} className="card block hover:animate-bounceSoft overflow-hidden">
+                {l.type === 'movies' && <ListPreview listId={l.id} />}
+                <div className="mt-2">
+                  <div className="font-semibold">{l.name}</div>
+                  <div className="text-xs opacity-60">{l.type}</div>
+                </div>
               </Link>
             ))}
           </div>

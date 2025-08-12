@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
 import {
   getList, listItems, addActivityItem, addMovieItem,
-  markDone, updateItem, deleteItem, addCourseItem, bulkDeleteItems, bulkUpdateItems, addGiftItem, updateGiftWrap, toggleGiftMask
+  markDone, updateItem, deleteItem, addCourseItem, bulkDeleteItems, bulkUpdateItems, addGiftItem, updateGiftWrap, toggleGiftMask,
+  updateGiftRevealAt
 } from '../lib/db'
 import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
@@ -61,11 +62,19 @@ export default function ListDetail() {
   const [wrapColor, setWrapColor] = useState('#f59e0b') // orange doré
   const [mask, setMask] = useState(true)
   const [meId, setMeId] = useState<string>('')
+  const [meLabel, setMeLabel] = useState<'Buddy'|'Camélia'>('Buddy')
+  const partnerLabel = meLabel === 'Buddy' ? 'Camélia' : 'Buddy'
 
-  useEffect(()=>{ (async ()=>{
+  useEffect(() => {
+  (async () => {
     const u = await supabase.auth.getUser()
-    setMeId(u.data.user?.id ?? '')
-  })() }, [])
+    const email = (u.data.user?.email || '').toLowerCase()
+    setMeId(u.data.user?.id || '')
+    // mapping explicite
+    if (email.startsWith('flavien.guenault')) setMeLabel('Buddy')
+    else if (email.startsWith('louanedechavanne')) setMeLabel('Camélia')
+  })()
+}, [])
 
   async function addGift(e: React.FormEvent){
     e.preventDefault()
@@ -358,22 +367,25 @@ async function clearDone(){
                     <div className="gift-bow" />
                     <div className="font-semibold text-white drop-shadow">🎁 Cadeau</div>
 
-                    <button
-                      type="button"
-                      className="icon-btn absolute top-2 right-2 bg-white/90"
-                      title="Supprimer"
-                      onClick={(e)=>{e.preventDefault(); setToDeleteItem(it)}}
-                    >✕</button>
+                    {it.creator_id === meId && (
+                      <button
+                        type="button"
+                        className="icon-btn absolute top-2 right-2 bg-white/90"
+                        title="Supprimer"
+                        onClick={(e)=>{ e.preventDefault(); setToDeleteItem(it) }}
+                      >✕</button>
+                    )}
                   </div>
                 ) : (
                   // ouvert (auteur ou déballé)
                   <div key={it.id} className="rounded-3xl border border-candy-100 bg-white px-3 py-3">
                     <div className="flex items-center gap-2">
                       <div className="font-semibold">{it.title}</div>
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full ${mine?'bg-amber-600 text-white':'bg-rose-900 text-white'}`}>
-                        {mine?'Buddy':'Camélia'}
+                      <span className="text-[11px] px-2 py-0.5 rounded-full
+                        {it.creator_id === meId ? 'bg-amber-600 text-white' : 'bg-rose-900 text-white'}">
+                        {it.creator_id === meId ? meLabel : partnerLabel}
                       </span>
-                      {it.is_hidden && <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">déballé</span>}
+                      {it.is_hidden && <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Emballé</span>}
                     </div>
 
                     <div className="mt-2 flex gap-2">
@@ -388,6 +400,18 @@ async function clearDone(){
                           >
                             {it.is_hidden ? 'Déballer' : 'Re-masquer'}
                           </button>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="date"
+                              className="rounded-lg border px-2 py-1 text-sm"
+                              value={it.reveal_at ?? ''}
+                              onChange={async (e)=>{
+                                await updateGiftRevealAt(it.id, e.target.value || null)
+                                if (id) setItems(await listItems(id))
+                              }}
+                            />
+                            <CountdownBadge dateStr={it.reveal_at} />
+                          </div>
                           <input
                             type="color"
                             className="w-9 h-9 rounded-lg border"
@@ -400,7 +424,14 @@ async function clearDone(){
                           />
                         </>
                       )}
-                      <button className="btn btn-outline text-xs" onClick={(e)=>{e.preventDefault(); setToDeleteItem(it)}}>Supprimer</button>
+                      {it.creator_id === meId && (
+                        <button
+                          className="btn btn-outline text-xs"
+                          onClick={(e)=>{ e.preventDefault(); setToDeleteItem(it) }}
+                        >
+                          Supprimer
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
@@ -609,6 +640,16 @@ async function clearDone(){
       />
     </div>
   )
+}
+
+function CountdownBadge({ dateStr }: { dateStr?: string | null }){
+  if (!dateStr) return null
+  const ms = new Date(dateStr).getTime() - Date.now()
+  const days = Math.ceil(ms / (1000*60*60*24))
+  if (isNaN(days)) return null
+  const text = days > 0 ? `J-${days}` : (days === 0 ? '🎉 Jour J' : `J+${Math.abs(days)}`)
+  const cls = days > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+  return <span className={`text-[11px] px-2 py-0.5 rounded-full ${cls}`}>{text}</span>
 }
 
 function Poster({ id }:{ id:number }){

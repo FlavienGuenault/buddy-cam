@@ -176,3 +176,8 @@ export async function updateGiftWrap(itemId: string, wrap_color: string){
   const { error } = await supabase.from('items').update({ wrap_color }).eq('id', itemId)
   if (error) throw error
 }
+
+export async function updateGiftRevealAt(itemId: string, reveal_at: string | null){
+  const { error } = await supabase.from('items').update({ reveal_at }).eq('id', itemId)
+  if (error) throw error
+}

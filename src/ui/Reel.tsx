@@ -110,7 +110,7 @@ function PirateSVG() {
 function SlashFX({ img, title, height=200 }: { img?: string; title: string; height?: number }) {
   const H = Math.max(170, Math.min(260, height))
   const W = Math.round(H * 0.67)
-  const D = 2 // secondes
+  const D = 1 // secondes
 
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-30">

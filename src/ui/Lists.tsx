@@ -43,6 +43,7 @@ export default function Lists() {
             <option value="movies">Films</option>
             <option value="activities">Activités</option>
             <option value="courses">Courses</option>
+            <option value="gifts">Cadeaux</option>
           </select>
           <button className="btn w-full">Créer</button>
         </form>

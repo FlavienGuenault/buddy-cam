@@ -22,10 +22,11 @@ export default function PoemsList(){
   })() }, [])
 
   function badge(authorId: string){
-    if (authorId === meId) return <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-amber-600">• Buddy</span>
-    if (partnerId && authorId === partnerId) return <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-rose-900">• Camélia</span>
-    return <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-gray-500">• Auteur</span>
-  }
+  if (!meId) return <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-gray-500">• Auteur</span>
+  return authorId === meId
+    ? <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-amber-600">• Buddy</span>
+    : <span className="inline-flex items-center gap-1 text-white text-[11px] px-2 py-0.5 rounded-full bg-rose-900">• Camélia</span>
+}
 
   const list = tab==='pub' ? pub : drafts
 

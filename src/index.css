@@ -110,20 +110,10 @@ body{
   .logo-rise { animation-duration: .8s; }
 }
 
-/* 1. Menu sticky - ajout d'espacement et amélioration */
-.sticky-menu {
-  position: sticky;
-  top: calc(env(safe-area-inset-top) + 24px); /* Plus d'espace en haut */
-  z-index: 10;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-radius: 1.5rem;
-  border: 1px solid rgba(244, 114, 182, 0.15);
-  padding: 0.75rem;
-  margin-bottom: 2rem; /* Espace avec les éléments suivants */
-  box-shadow: 0 8px 25px rgba(244, 114, 182, 0.12), 
-              0 3px 10px rgba(244, 114, 182, 0.08);
+/* Espacement spécial pour éviter le chevauchement */
+.courses-sticky-menu {
+  /* Espace supplémentaire en bas pour séparer des items */
+  margin-bottom: 1.5rem;
 }
 
 /* 2. Amélioration des ombres des cartes - plus douces et arrondies */
@@ -178,4 +168,38 @@ body{
   box-shadow: 0 10px 30px rgba(244, 114, 182, 0.15),
               0 4px 15px rgba(244, 114, 182, 0.08),
               0 1px 5px rgba(244, 114, 182, 0.05) !important;
+}
+
+.gift-wrap{
+  --wrap: #f59e0b; /* fallback */
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--wrap) 92%, #fff 8%), color-mix(in oklab, var(--wrap) 70%, #000 30%));
+  position: relative; overflow: hidden; border-radius: 1.5rem;
+  border: 1px solid color-mix(in oklab, var(--wrap) 45%, #000 5%);
+}
+/* ruban vertical */
+.gift-wrap .gift-ribbon{
+  position: absolute; inset: -8px auto -8px 50%;
+  width: 18px; transform: translateX(-50%);
+  background: linear-gradient(#7f1d1d, #b91c1c);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset;
+}
+/* noeud */
+.gift-wrap .gift-bow{
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 34px; height: 22px; border-radius: 11px/8px;
+  background: radial-gradient(circle at 30% 40%, #fecaca, #991b1b 60%);
+  box-shadow: 0 2px 0 rgba(0,0,0,.08);
+}
+/* éclat "bling" léger */
+.gift-wrap::after{
+  content:''; position:absolute; top:-40%; left:-20%;
+  width:140%; height:180%;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.25) 45%, transparent 60%);
+  transform: rotate(8deg); animation: gift-shine 2.4s ease-in-out infinite;
+}
+@keyframes gift-shine{
+  0% { transform: translateX(-30%) rotate(8deg); }
+  50% { transform: translateX(10%) rotate(8deg); }
+  100% { transform: translateX(40%) rotate(8deg); }
 }

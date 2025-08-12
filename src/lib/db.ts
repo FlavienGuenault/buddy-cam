@@ -152,3 +152,27 @@ export async function bulkDeleteItems(ids: string[]){
   const { error } = await supabase.from('items').delete().in('id', ids)
   if (error) throw error
 }
+
+export async function addGiftItem(
+  listId: string,
+  title: string,
+  wrap_color: string,
+  is_hidden: boolean
+){
+  const me = await getMe()
+  const { error } = await supabase.from('items').insert({
+    list_id: listId, title, status:'todo',
+    creator_id: me.id, wrap_color, is_hidden
+  })
+  if (error) throw error
+}
+
+export async function toggleGiftMask(itemId: string, on: boolean){
+  const { error } = await supabase.from('items').update({ is_hidden: on }).eq('id', itemId)
+  if (error) throw error
+}
+
+export async function updateGiftWrap(itemId: string, wrap_color: string){
+  const { error } = await supabase.from('items').update({ wrap_color }).eq('id', itemId)
+  if (error) throw error
+}

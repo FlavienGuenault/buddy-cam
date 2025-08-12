@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
 import {
   getList, listItems, addActivityItem, addMovieItem,
-  markDone, updateItem, deleteItem, addCourseItem, bulkDeleteItems, bulkUpdateItems
+  markDone, updateItem, deleteItem, addCourseItem, bulkDeleteItems, bulkUpdateItems, addGiftItem, updateGiftWrap, toggleGiftMask
 } from '../lib/db'
 import type { Item, List } from '../lib/types'
 import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
@@ -55,6 +55,24 @@ export default function ListDetail() {
   async function boot(listId: string) {
     const l = await getList(listId); setList(l)
     const d = await listItems(listId); setItems(d)
+  }
+
+  const [giftTitle, setGiftTitle] = useState('')
+  const [wrapColor, setWrapColor] = useState('#f59e0b') // orange doré
+  const [mask, setMask] = useState(true)
+  const [meId, setMeId] = useState<string>('')
+
+  useEffect(()=>{ (async ()=>{
+    const u = await supabase.auth.getUser()
+    setMeId(u.data.user?.id ?? '')
+  })() }, [])
+
+  async function addGift(e: React.FormEvent){
+    e.preventDefault()
+    if (!id || !giftTitle.trim()) return
+    await addGiftItem(id, giftTitle.trim(), wrapColor, mask)
+    setGiftTitle(''); setMask(true)
+    setItems(await listItems(id))
   }
 
   // recherche live (debounce)
@@ -176,131 +194,252 @@ async function clearDone(){
 })
 
   return (
-    <div className="grid gap-5 overflow-x-hidden">
-      <header className="flex justify-between items-center">
-        <h2 className="text-2xl font-black text-candy-700">
-          {list.name} <small className="opacity-60 font-normal">({list.type})</small>
-        </h2>
-      </header>
-      {list?.type==='courses' && sug.length>0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {sug.map(s => (
-            <button key={s.t} className="px-3 py-1.5 rounded-full border shadow-candy text-sm active:scale-95"
-              onClick={()=>{ setCourseTitle(s.t); setUnit(s.u||'') }}>
-              {s.t}{s.u?` · ${s.u}`:''}
-            </button>
-          ))}
-        </div>
-      )}
-      {list?.type === 'courses' && (
-        <section className="card p-0">
-          <form onSubmit={addCourse} className="grid gap-3 p-3">
-            <h3 className="font-bold">Nouvel article</h3>
+  <div className="grid gap-5 overflow-x-hidden">
+    <header className="flex justify-between items-center">
+      <h2 className="text-2xl font-black text-candy-700">
+        {list.name} <small className="opacity-60 font-normal">({list.type})</small>
+      </h2>
+    </header>
 
+    {/* Suggestions pour courses */}
+    {list?.type==='courses' && sug.length>0 && (
+      <div className="flex flex-wrap gap-2 mb-2">
+        {sug.map(s => (
+          <button key={s.t} className="px-3 py-1.5 rounded-full border shadow-candy text-sm active:scale-95"
+            onClick={()=>{ setCourseTitle(s.t); setUnit(s.u||'') }}>
+            {s.t}{s.u?` · ${s.u}`:''}
+          </button>
+        ))}
+      </div>
+    )}
+
+    {/* Formulaires d'ajout */}
+    {list?.type === 'courses' && (
+      <section className="card p-0">
+        <form onSubmit={addCourse} className="grid gap-3 p-3">
+          <h3 className="font-bold">Nouvel article</h3>
+          <input
+            className="w-full rounded-2xl border px-4 py-3"
+            value={courseTitle}
+            onChange={e=>setCourseTitle(e.target.value)}
+            placeholder="Ex: Lait"
+            required
+          />
+          <div className="grid grid-cols-2 gap-2">
             <input
               className="w-full rounded-2xl border px-4 py-3"
-              value={courseTitle}
-              onChange={e=>setCourseTitle(e.target.value)}
-              placeholder="Ex: Lait"
-              required
+              type="number" min="0" step="0.01"
+              value={qty}
+              onChange={e=>setQty(e.target.value===''?'':Number(e.target.value))}
+              placeholder="Qté"
             />
-
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                className="w-full rounded-2xl border px-4 py-3"
-                type="number" min="0" step="0.01"
-                value={qty}
-                onChange={e=>setQty(e.target.value===''?'':Number(e.target.value))}
-                placeholder="Qté"
-              />
-              <input
-                className="w-full rounded-2xl border px-4 py-3"
-                value={unit}
-                onChange={e=>setUnit(e.target.value)}
-                placeholder="Unité (L, kg, boîte…)"
-              />
-            </div>
-
-            <button className="btn w-full">Ajouter</button>
-          </form>
-        </section>
-      )}
-
-
-      {list.type === 'activities' && (
-        <section className="card">
-          <h3 className="font-bold mb-2">Nouvelle activité</h3>
-          <form onSubmit={addActivity} className="grid gap-2">
-            <input className="rounded-2xl border px-3 py-3" value={title} onChange={e=>setTitle(e.target.value)} placeholder='Titre' required />
-            <input className="rounded-2xl border px-3 py-3" value={notes} onChange={e=>setNotes(e.target.value)} placeholder='Notes (optionnel)' />
-            <button className="btn w-full">Ajouter</button>
-          </form>
-        </section>
-      )}
-
-      {list.type === 'movies' && (
-        <section className="card">
-          <h3 className="font-bold mb-2">Ajouter un film (TMDb)</h3>
-          <div className="relative">
             <input
-              ref={inputRef}
               className="w-full rounded-2xl border px-4 py-3"
-              value={q}
-              onChange={e=>setQ(e.target.value)}
-              placeholder='Tape pour chercher…'
+              value={unit}
+              onChange={e=>setUnit(e.target.value)}
+              placeholder="Unité (L, kg, boîte…)"
             />
           </div>
-          {dropdownOpen && inputRef.current && createPortal(
-            <FloatingResults
-              anchor={inputRef.current}
-              searching={searching}
-              suggests={suggests}
-              onPick={m=>addMovie(m)}
-            />,
-            document.body
-          )}
-        </section>
-      )}
+          <button className="btn w-full">Ajouter</button>
+        </form>
+      </section>
+    )}
 
-      <section className="overflow-x-hidden space-y-3 items-section">
-        <h3 className="font-bold mb-2">Éléments</h3>
-        {list?.type==='courses' && (
-          <div className="sticky-menu">            
-            <label className="ml-auto flex items-center gap-1 text-sm">
-              <input type="checkbox" checked={hideDone} onChange={e=>setHideDone(e.target.checked)} /> Masquer faits
+    {/* Autres formulaires... */}
+    {list?.type === 'gifts' && (
+      <section className="card p-0">
+        <form onSubmit={addGift} className="grid gap-3 p-3">
+          <h3 className="font-bold">Nouveau cadeau</h3>
+          <input
+            className="w-full rounded-2xl border px-4 py-3"
+            value={giftTitle}
+            onChange={e=>setGiftTitle(e.target.value)}
+            placeholder="Ex: Surprise pour toi"
+            required
+          />
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={mask} onChange={e=>setMask(e.target.checked)} />
+              Masquer (papier-cadeau)
             </label>
-            <button className="btn text-xs" onClick={()=>toggleAll(true)}>Tout cocher</button>
-            <button className="btn text-xs" onClick={()=>toggleAll(false)}>Tout décocher</button>
-            <button className="btn btn-outline text-xs" onClick={clearDone}>Supprimer faits</button>
+            <input
+              type="color"
+              className="w-10 h-10 rounded-lg border"
+              value={wrapColor}
+              onChange={e=>setWrapColor(e.target.value)}
+              title="Couleur du papier"
+            />
           </div>
+          <button className="btn w-full">Ajouter</button>
+        </form>
+      </section>
+    )}
+    {list.type === 'activities' && (
+      <section className="card">
+        <h3 className="font-bold mb-2">Nouvelle activité</h3>
+        <form onSubmit={addActivity} className="grid gap-2">
+          <input className="rounded-2xl border px-3 py-3" value={title} onChange={e=>setTitle(e.target.value)} placeholder='Titre' required />
+          <input className="rounded-2xl border px-3 py-3" value={notes} onChange={e=>setNotes(e.target.value)} placeholder='Notes (optionnel)' />
+          <button className="btn w-full">Ajouter</button>
+        </form>
+      </section>
+    )}
+
+    {list.type === 'movies' && (
+      <section className="card">
+        <h3 className="font-bold mb-2">Ajouter un film (TMDb)</h3>
+        <div className="relative">
+          <input
+            ref={inputRef}
+            className="w-full rounded-2xl border px-4 py-3"
+            value={q}
+            onChange={e=>setQ(e.target.value)}
+            placeholder='Tape pour chercher…'
+          />
+        </div>
+        {dropdownOpen && inputRef.current && createPortal(
+          <FloatingResults
+            anchor={inputRef.current}
+            searching={searching}
+            suggests={suggests}
+            onPick={m=>addMovie(m)}
+          />,
+          document.body
         )}
-        <div className="grid grid-cols-1 gap-4">
-          {orderedItems
-            .filter(it => hideDone ? it.status!=='done' : true)
-            .map(it => (
-            list?.type === 'courses' ? (
-              // --- RENDU SPÉCIAL COURSES (case à cocher + qté/unité) ---
+      </section>
+    )}
+
+    {/* BARRE STICKY - SORTIE DE LA SECTION ÉLÉMENTS */}
+    
+    {list?.type==='courses' && (
+      <div className="sticky top-4 z-10 bg-white/95 backdrop-blur-sm rounded-2xl border border-candy-200 px-4 py-3 shadow-lg mb-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="flex items-center gap-2 text-sm">
+            <input 
+              type="checkbox" 
+              checked={hideDone} 
+              onChange={e=>setHideDone(e.target.checked)} 
+              className="rounded"
+            /> 
+            Masquer faits
+          </label>
+          <div className="flex gap-2 ml-auto">
+            <button className="btn text-xs px-3 py-1.5" onClick={()=>toggleAll(true)}>
+              Tout cocher
+            </button>
+            <button className="btn text-xs px-3 py-1.5" onClick={()=>toggleAll(false)}>
+              Tout décocher
+            </button>
+            <button className="btn btn-outline text-xs px-3 py-1.5" onClick={clearDone}>
+              Supprimer faits
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* SECTION ÉLÉMENTS - SANS LA BARRE STICKY DEDANS */}
+    <section className="overflow-x-hidden space-y-3">
+      <h3 className="font-bold mb-4">Éléments</h3>
+      
+      <div className="grid grid-cols-1 gap-4">
+        {orderedItems
+          .filter(it => hideDone ? it.status!=='done' : true)
+          .map(it => (
+            list?.type === 'gifts' ? (
+              // ------ RENDU CADEAUX ------
+              (() => {
+                const mine = it.creator_id === meId
+                const hiddenForOther = it.is_hidden && !mine
+                return hiddenForOther ? (
+                  // paquet fermé (l’autre voit un paquet)
+                  <div key={it.id} className="relative rounded-3xl p-4 gift-wrap" style={{ ['--wrap' as any]: it.wrap_color }}>
+                    <div className="gift-ribbon" />
+                    <div className="gift-bow" />
+                    <div className="font-semibold text-white drop-shadow">🎁 Cadeau</div>
+
+                    <button
+                      type="button"
+                      className="icon-btn absolute top-2 right-2 bg-white/90"
+                      title="Supprimer"
+                      onClick={(e)=>{e.preventDefault(); setToDeleteItem(it)}}
+                    >✕</button>
+                  </div>
+                ) : (
+                  // ouvert (auteur ou déballé)
+                  <div key={it.id} className="rounded-3xl border border-candy-100 bg-white px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold">{it.title}</div>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full ${mine?'bg-amber-600 text-white':'bg-rose-900 text-white'}`}>
+                        {mine?'Buddy':'Camélia'}
+                      </span>
+                      {it.is_hidden && <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">déballé</span>}
+                    </div>
+
+                    <div className="mt-2 flex gap-2">
+                      {mine && (
+                        <>
+                          <button
+                            className="btn text-xs"
+                            onClick={async ()=>{
+                              await toggleGiftMask(it.id, !it.is_hidden)
+                              if (id) setItems(await listItems(id))
+                            }}
+                          >
+                            {it.is_hidden ? 'Déballer' : 'Re-masquer'}
+                          </button>
+                          <input
+                            type="color"
+                            className="w-9 h-9 rounded-lg border"
+                            value={it.wrap_color}
+                            onChange={async e=>{
+                              await updateGiftWrap(it.id, e.target.value)
+                              if (id) setItems(await listItems(id))
+                            }}
+                            title="Couleur du papier"
+                          />
+                        </>
+                      )}
+                      <button className="btn btn-outline text-xs" onClick={(e)=>{e.preventDefault(); setToDeleteItem(it)}}>Supprimer</button>
+                    </div>
+                  </div>
+                )
+              })()
+            ) : list?.type === 'courses' ? (
               <label
                 key={it.id}
-                className={`relative flex items-center gap-3 rounded-3xl border border-candy-100 bg-white px-3 py-2 shadow-none ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
+                className={`relative flex items-center gap-3 rounded-2xl border border-candy-100 bg-white px-3 py-3 shadow-sm ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
               >
                 {/* stepper qty */}
                 <div className="flex items-center gap-1">
-                  <button className="w-8 h-8 rounded-full border" onClick={()=>stepQty(it, -1)}>-</button>
-                  <div className="w-10 text-center text-sm">{it.qty ?? 0}</div>
-                  <button className="w-8 h-8 rounded-full border" onClick={()=>stepQty(it, +1)}>+</button>
+                  <button 
+                    type="button"
+                    className="w-8 h-8 rounded-full border border-candy-300 hover:bg-candy-50 flex items-center justify-center" 
+                    onClick={(e)=>{e.preventDefault(); stepQty(it, -1)}}
+                  >
+                    -
+                  </button>
+                  <div className="w-10 text-center text-sm font-medium">{it.qty ?? 0}</div>
+                  <button 
+                    type="button"
+                    className="w-8 h-8 rounded-full border border-candy-300 hover:bg-candy-50 flex items-center justify-center" 
+                    onClick={(e)=>{e.preventDefault(); stepQty(it, +1)}}
+                  >
+                    +
+                  </button>
                 </div>
+                
                 {/* checkbox done/todo */}
                 <input
                   type="checkbox"
-                  className="w-5 h-5"
+                  className="w-5 h-5 rounded"
                   checked={it.status === 'done'}
                   onChange={() => it.status==='done' ? remise(it.id) : markAsDone(it)}
                   title={it.status==='done' ? 'Remettre en TODO' : 'Marquer fait'}
                 />
 
                 <div className="flex-1">
-                  <div className="font-bold">{it.title}</div>
+                  <div className="font-semibold">{it.title}</div>
                   {(it.qty || it.unit) && (
                     <div className="text-sm opacity-70 mt-1">
                       {it.qty ?? ''} {it.unit ?? ''}
@@ -310,10 +449,13 @@ async function clearDone(){
 
                 {/* croix suppression */}
                 <button
+                  type="button"
                   className="icon-btn absolute top-2 right-2"
-                  title="Supprimer l’élément"
-                  onClick={()=> setToDeleteItem(it)}
-                >✕</button>
+                  title="Supprimer l'élément"
+                  onClick={(e)=>{e.preventDefault(); setToDeleteItem(it)}}
+                >
+                  ✕
+                </button>
               </label>
             ) : (
               <div

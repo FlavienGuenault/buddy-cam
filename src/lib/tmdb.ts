@@ -54,3 +54,17 @@ export async function getAllEpisodes(tvId: number): Promise<{s:number;e:number}[
   }
   return out
 }
+
+export async function searchTV(q: string){
+  const url = `${BASE}/search/tv?language=fr-FR&query=${encodeURIComponent(q)}&api_key=${KEY_V3}`
+  const r = await fetch(url)
+  if (!r.ok) throw new Error('tmdb search tv')
+  return await r.json() as { results: Array<{ id:number; name:string; poster_path?:string; first_air_date?:string }> }
+}
+
+export type TmdbTV = {
+  id: number
+  name: string
+  poster_path?: string | null
+  first_air_date?: string | null
+}

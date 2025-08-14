@@ -7,7 +7,8 @@ import {
   updateGiftRevealAt
 } from '../lib/db'
 import type { Item, List } from '../lib/types'
-import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG } from '../lib/tmdb'
+import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG, searchTV } from '../lib/tmdb'
+import type { TmdbTV } from '../lib/tmdb'
 import { supabase } from '../lib/supabase'
 
 import Reel from './Reel'
@@ -37,11 +38,17 @@ export default function ListDetail() {
   // création activité
   const [title, setTitle] = useState(''); const [notes, setNotes] = useState('')
 
-  // recherche film dynamique
+  // recherche film et series dynamique
   const [q, setQ] = useState(''); const [suggests, setSuggests] = useState<TmdbMovie[]>([])
   const [searching, setSearching] = useState(false); const [dropdownOpen, setDropdownOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const debounceRef = useRef<number | undefined>(undefined)
+  const [qTV, setQTV] = useState('')
+  const [suggestsTV, setSuggestsTV] = useState<TmdbTV[]>([])
+  const [searchingTV, setSearchingTV] = useState(false)
+  const [dropdownTVOpen, setDropdownTVOpen] = useState(false)
+  const inputTVRef = useRef<HTMLInputElement | null>(null)
+  const debounceTVRef = useRef<number | undefined>(undefined)
 
   // UI
   const [showWheel, setShowWheel] = useState(false)
@@ -102,6 +109,21 @@ export default function ListDetail() {
     return () => window.clearTimeout(debounceRef.current)
   }, [q])
 
+  useEffect(() => {
+    window.clearTimeout(debounceTVRef.current)
+    if (!qTV || qTV.trim().length < 2) { setSuggestsTV([]); setDropdownTVOpen(false); return }
+    setSearchingTV(true)
+    debounceTVRef.current = window.setTimeout(async () => {
+      try {
+        const r = await searchTV(qTV.trim())
+        setSuggestsTV(r.results ?? [])
+        setDropdownTVOpen(true)
+      } catch {/* ignore */}
+      finally { setSearchingTV(false) }
+    }, 250)
+    return () => window.clearTimeout(debounceTVRef.current)
+  }, [qTV])
+
   // ferme le dropdown quand on clique ailleurs
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -109,6 +131,17 @@ export default function ListDetail() {
       const r = inputRef.current.getBoundingClientRect()
       const x = (e as any).clientX, y = (e as any).clientY
       if (x<r.left || x>r.right || y<r.top || y>r.bottom+300) setDropdownOpen(false)
+    }
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [])
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (!inputTVRef.current) return
+      const r = inputTVRef.current.getBoundingClientRect()
+      const x = (e as any).clientX, y = (e as any).clientY
+      if (x<r.left || x>r.right || y<r.top || y>r.bottom+300) setDropdownTVOpen(false)
     }
     window.addEventListener('click', close)
     return () => window.removeEventListener('click', close)
@@ -135,6 +168,13 @@ export default function ListDetail() {
     setSuggests([]); setQ(''); setDropdownOpen(false)
   }
 
+  async function addSeries(tv: TmdbTV){
+    if (!id) return
+    await addMovieItem(id, tv.id, tv.name) // on réutilise le même helper (tmdb_id + titre)
+    setItems(await listItems(id))
+    setSuggestsTV([]); setQTV(''); setDropdownTVOpen(false)
+  }
+
   async function markAsDone(it: Item, r?:{ rating?:number; review?:string }) {
     const now = new Date().toISOString()
     await markDone(it.id, { status:'done', when_at: now, rating: r?.rating ?? null as any, review: r?.review })
@@ -150,6 +190,7 @@ const [hideDone, setHideDone] = useState(false)
 
 // suggestions locales
 type Suggestion = { t: string, u?: string|null }
+type TmdbTV = { id:number; name:string; poster_path?:string; first_air_date?:string }
 function readSug(): Suggestion[] {
   try { return JSON.parse(localStorage.getItem('course_sug')||'[]') } catch { return [] }
 }
@@ -323,6 +364,30 @@ const [seriesReelOpen, setSeriesReelOpen] = useState(false)
             searching={searching}
             suggests={suggests}
             onPick={m=>addMovie(m)}
+          />,
+          document.body
+        )}
+      </section>
+    )}
+
+    {list.type === 'series' && (
+      <section className="card">
+        <h3 className="font-bold mb-2">Ajouter une série (TMDb)</h3>
+        <div className="relative">
+          <input
+            ref={inputTVRef}
+            className="w-full rounded-2xl border px-4 py-3"
+            value={qTV}
+            onChange={e=>setQTV(e.target.value)}
+            placeholder='Tape pour chercher…'
+          />
+        </div>
+        {dropdownTVOpen && inputTVRef.current && createPortal(
+          <FloatingResultsTV
+            anchor={inputTVRef.current}
+            searching={searchingTV}
+            suggests={suggestsTV}
+            onPick={m=>addSeries(m)}
           />,
           document.body
         )}
@@ -714,6 +779,47 @@ const [seriesReelOpen, setSeriesReelOpen] = useState(false)
           finally{ setBusyDelete(false) }
         }}
       />
+    </div>
+  )
+}
+
+function FloatingResultsTV({ anchor, searching, suggests, onPick }:{
+  anchor: HTMLInputElement; searching:boolean; suggests: TmdbTV[]; onPick:(m:TmdbTV)=>void
+}){
+  const [style, setStyle] = useState<React.CSSProperties>({})
+  useEffect(()=>{
+    const place = () => {
+      const r = anchor.getBoundingClientRect()
+      setStyle({
+        position:'fixed', left: r.left, top: r.bottom+8, width: r.width,
+        maxHeight: '60vh', overflow: 'auto', zIndex: 10000
+      })
+    }
+    place()
+    const obs = new ResizeObserver(place); obs.observe(document.documentElement)
+    window.addEventListener('scroll', place, true); window.addEventListener('resize', place)
+    return ()=>{ obs.disconnect(); window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place) }
+  }, [anchor])
+
+  return (
+    <div style={style} className="bg-white rounded-2xl shadow-candy">
+      {searching && <div className="px-4 py-2 text-sm opacity-60">Recherche…</div>}
+      {!searching && suggests.length===0 && (<div className="px-4 py-2 text-sm opacity-60">Aucun résultat</div>)}
+      {suggests.slice(0,10).map(m => (
+        <div key={m.id} className="flex gap-3 p-2 items-center hover:bg-candy-50 cursor-pointer"
+             onClick={()=>onPick(m)}>
+          {/* poster */}
+          <img
+            src={m.poster_path ? `https://image.tmdb.org/t/p/w92${m.poster_path}` : ''}
+            className="w-12 h-16 rounded-xl object-cover bg-candy-100"
+          />
+          <div className="flex-1">
+            <div className="font-semibold">{m.name}</div>
+            <div className="text-xs opacity-60">{m.first_air_date?.slice(0,4) ?? '—'}</div>
+          </div>
+          <button className="btn">Ajouter</button>
+        </div>
+      ))}
     </div>
   )
 }

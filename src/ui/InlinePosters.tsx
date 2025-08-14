@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { listMovieIds } from '../lib/db'
-import { getMovie, TMDB_IMG } from '../lib/tmdb'
+import { listMovieIds, listSeriesIds } from '../lib/db'
+import { getMovie, getTV, TMDB_IMG } from '../lib/tmdb'
 
-export default function InlinePosters({ listId }: { listId: string }) {
+export default function InlinePosters({ listId, type='movies' }: { listId: string; type?: 'movies'|'series' }) {
   const [paths, setPaths] = useState<string[]>([])
   const [total, setTotal] = useState(0)
   const [count, setCount] = useState(3) // nb de vignettes visibles (0..3)
@@ -11,19 +11,22 @@ export default function InlinePosters({ listId }: { listId: string }) {
     let alive = true
     ;(async () => {
       // On prend large pour que le +N soit juste
-      const ids = await listMovieIds(listId, 50)
+      const ids = type === 'series'
+        ? await listSeriesIds(listId, 50)
+        : await listMovieIds(listId, 50)
       if (!alive) return
       setTotal(ids.length)
 
       // Charge seulement ce qu'on va potentiellement afficher (max 8 pour ne pas spam l'API)
       const sample = ids.slice(0, 8)
-      const movies = await Promise.all(sample.map(id => getMovie(id).catch(() => null)))
-      const posters = movies.filter(Boolean).map((m: any) => m.poster_path).filter(Boolean)
+      const fetcher = type === 'series' ? getTV : getMovie
+      const entries = await Promise.all(sample.map(id => fetcher(id).catch(() => null)))
+      const posters = entries.filter(Boolean).map((m: any) => m.poster_path).filter(Boolean)
       if (!alive) return
       setPaths(posters)
     })()
     return () => { alive = false }
-  }, [listId])
+  }, [listId, type])
 
   // Adapte le nb de vignettes à la largeur
   useEffect(() => {

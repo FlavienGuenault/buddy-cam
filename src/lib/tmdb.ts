@@ -26,3 +26,31 @@ export async function getMovie(id: number) {
   if (!res.ok) throw new Error('TMDb movie error')
   return res.json() as Promise<any>
 }
+
+export async function getTV(tvId: number){
+  const r = await fetch(`${BASE}/tv/${tvId}?language=fr-FR&api_key=${KEY_V3}`)
+  if (!r.ok) throw new Error('tmdb tv')
+  return await r.json()
+}
+
+export async function getSeason(tvId: number, seasonNumber: number){
+  const r = await fetch(`${BASE}/tv/${tvId}/season/${seasonNumber}?language=fr-FR&api_key=${KEY_V3}`)
+  if (!r.ok) throw new Error('tmdb season')
+  return await r.json()
+}
+
+/** Récupère la liste [ {s:1,e:1}, … ] en ignorant la saison 0 (Specials) */
+export async function getAllEpisodes(tvId: number): Promise<{s:number;e:number}[]>{
+  const tv = await getTV(tvId)
+  const seasons: number[] = (tv.seasons||[])
+    .map((s:any)=>s.season_number)
+    .filter((n:number)=>n>0)
+  const out: {s:number;e:number}[] = []
+  for (const sn of seasons){
+    const sea = await getSeason(tvId, sn)
+    for (const ep of (sea.episodes||[])){
+      out.push({ s: sn, e: ep.episode_number })
+    }
+  }
+  return out
+}

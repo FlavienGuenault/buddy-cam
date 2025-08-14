@@ -16,6 +16,11 @@ import MapPicker from './MapPicker'
 import FancyWheelButton from './FancyWheelButton'
 import ConfirmModal from './ConfirmModal'
 
+/* === AJOUT SÉRIES (imports) === */
+import TVPoster from './TVPoster'
+import SeriesSheet from './SeriesSheet'
+import SeriesReel from './SeriesReel'
+
 function whoAmI(email?: string|null): 'Buddy'|'Camélia'|'Autre' {
   if (!email) return 'Autre'
   const e = email.toLowerCase()
@@ -185,10 +190,16 @@ async function clearDone(){
 }
 
 
+/* === AJOUT SÉRIES (états overlays) === */
+const [seriesItem, setSeriesItem] = useState<{ itemId:string; tmdbId:number } | null>(null)
+const [seriesReelOpen, setSeriesReelOpen] = useState(false)
+
   if (!list) return <div className="card">Chargement…</div>
 
   const showBigWheelBtn =
     list.type === 'movies' && items.filter(i => i.status === 'todo').length >= 2
+  const showSeriesWheelBtn =
+  list.type === 'series' && items.some(i => !!i.tmdb_id)
   
   const orderedItems = items.slice().sort((a, b) => {
     // 1) d'abord les TODO, ensuite les DONE
@@ -488,6 +499,44 @@ async function clearDone(){
                   ✕
                 </button>
               </label>
+            ) : list?.type === 'series' ? (
+              /* === AJOUT SÉRIES : carte série === */
+              <div
+                key={it.id}
+                className={`card relative ${it.status==='done' ? 'opacity-60 grayscale' : ''}`}
+              >
+                {/* croix suppression */}
+                <button
+                  className="icon-btn absolute top-2 right-2"
+                  title="Supprimer l’élément"
+                  onClick={()=> setToDeleteItem(it)}
+                >✕</button>
+
+                <div className="flex gap-3">
+                  {it.tmdb_id ? <TVPoster id={it.tmdb_id} className="w-16 h-24 object-cover rounded-xl" /> : null}
+                  <div className="flex-1">
+                    <div className="font-bold">{it.title}</div>
+                    <div className="text-sm opacity-60 mt-1">Suivi des saisons & épisodes</div>
+
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {it.tmdb_id && (
+                        <button
+                          onClick={() => setSeriesItem({ itemId: it.id, tmdbId: it.tmdb_id! })}
+                          className="rounded-full px-3 py-1.5 text-sm font-semibold text-white bg-candy-500 hover:bg-candy-600 shadow-candy active:scale-95 transition"
+                        >
+                          Détails
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSeriesReelOpen(true)}
+                        className="rounded-full px-3 py-1.5 text-sm font-semibold bg-white border border-candy-300 text-candy-700 hover:bg-candy-50 shadow-candy active:scale-95 transition"
+                      >
+                        Roulette épisode
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div
                 key={it.id}
@@ -618,6 +667,33 @@ async function clearDone(){
           <FancyWheelButton offsetPx={65} onClick={() => { setDropdownOpen(false); setShowWheel(true) }} />
           <div style={{ height: 28 + 85 }} />
         </>
+      )}
+      {showSeriesWheelBtn && (
+        <>
+          <FancyWheelButton offsetPx={65} onClick={() => setSeriesReelOpen(true)} />
+          <div style={{ height: 28 + 85 }} />
+        </>
+      )}
+
+      {/* === AJOUT SÉRIES : overlays === */}
+      {seriesItem && (
+        <SeriesSheet
+          itemId={seriesItem.itemId}
+          tmdbId={seriesItem.tmdbId}
+          onClose={()=>setSeriesItem(null)}
+          meId={meId}
+        />
+      )}
+      {seriesReelOpen && (
+        <SeriesReel
+          items={items.filter(x=>x.tmdb_id).map(x=>({ id:x.id, title:x.title, tmdb_id:x.tmdb_id! }))}
+          meId={meId}
+          onFinish={({ itemId, tvId })=>{
+            setSeriesReelOpen(false)
+            setSeriesItem({ itemId, tmdbId: tvId })
+          }}
+          onClose={()=>setSeriesReelOpen(false)}
+        />
       )}
 
       {/* modal suppression item */}

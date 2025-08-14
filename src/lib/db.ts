@@ -181,3 +181,58 @@ export async function updateGiftRevealAt(itemId: string, reveal_at: string | nul
   const { error } = await supabase.from('items').update({ reveal_at }).eq('id', itemId)
   if (error) throw error
 }
+
+export async function listEpisodeViews(itemId: string){
+  const { data, error } = await supabase
+    .from('episode_views')
+    .select('user_id, season, episode')
+    .eq('item_id', itemId)
+  if (error) throw error
+  return data as { user_id:string; season:number; episode:number }[]
+}
+
+export async function setEpisodeSeen(itemId: string, season: number, episode: number, seen: boolean){
+  const me = await getMe()
+  if (seen){
+    const { error } = await supabase.from('episode_views').insert({ item_id:itemId, user_id:me.id, season, episode })
+    if (error && !String(error.message||'').includes('duplicate key')) throw error
+  }else{
+    const { error } = await supabase
+      .from('episode_views')
+      .delete()
+      .match({ item_id:itemId, user_id:me.id, season, episode })
+    if (error) throw error
+  }
+}
+
+export async function setSeasonSeen(itemId: string, season: number, episodes: number[], seen: boolean){
+  const me = await getMe()
+  if (seen){
+    const rows = episodes.map(e => ({ item_id:itemId, user_id:me.id, season, episode:e }))
+    const { error } = await supabase
+      .from('episode_views')
+      .upsert(rows, { onConflict: 'item_id,user_id,season,episode', ignoreDuplicates: false })
+    if (error) throw error
+  }else{
+    const { error } = await supabase
+      .from('episode_views')
+      .delete()
+      .eq('item_id', itemId)
+      .eq('user_id', me.id)
+      .eq('season', season)
+      .in('episode', episodes)
+    if (error) throw error
+  }
+}
+
+export async function listSeriesIds(listId: string, limit = 50){
+  const { data, error } = await supabase
+    .from('items')
+    .select('tmdb_id')
+    .eq('list_id', listId)
+    .not('tmdb_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data || []).map((r: any) => r.tmdb_id as number)
+}

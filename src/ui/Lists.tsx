@@ -44,6 +44,7 @@ export default function Lists() {
             <option value="activities">Activités</option>
             <option value="courses">Courses</option>
             <option value="gifts">Cadeaux</option>
+            <option value="series">Séries</option>
           </select>
           <button className="btn w-full">Créer</button>
         </form>
@@ -72,7 +73,9 @@ export default function Lists() {
                 <Link to={`/list/${l.id}`} className="block min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="font-semibold truncate">{l.name}</div>
-                    {l.type === 'movies' && <InlinePosters listId={l.id} />}
+                    {(l.type === 'movies' || l.type === 'series') && (
+                      <InlinePosters listId={l.id} type={l.type === 'series' ? 'series' : 'movies'} />
+                     )}
                   </div>
                   <div className="text-xs opacity-60">{l.type}</div>
                 </Link>

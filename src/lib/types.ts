@@ -1,4 +1,4 @@
-export type List = { id: string; type: 'movies'|'activities'|'courses'|'gifts'; name: string; owner_id: string; created_at: string }
+export type List = { id: string; type: 'movies'|'activities'|'courses'|'gifts'|'series'; name: string; owner_id: string; created_at: string }
 export type Point = { lat:number; lng:number; label?:string }
 export type DuoLocation = { buddy?: Point; camelia?: Point }
 

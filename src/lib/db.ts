@@ -51,10 +51,23 @@ export async function addActivityItem(listId: string, title: string, notes?: str
   return data
 }
 
-export async function addMovieItem(listId: string, tmdb_id: number, title: string) {
-  const { data, error } = await supabase.from('items').insert({ list_id: listId, tmdb_id, title })
+export async function addMovieItem(listId: string, tmdbId: number, title: string) {
+  // récupère l’utilisateur courant
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr) throw authErr
+  if (!user?.id) throw new Error('Non connecté')
+
+  const { error } = await supabase
+    .from('items')
+    .insert({
+      list_id: listId,
+      title,
+      tmdb_id: tmdbId,
+      status: 'todo',
+      creator_id: user.id,          // 👈 important
+    })
+
   if (error) throw error
-  return data
 }
 
 export async function markDone(itemId: string, patch: Partial<Item>) {

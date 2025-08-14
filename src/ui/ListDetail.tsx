@@ -7,8 +7,7 @@ import {
   updateGiftRevealAt
 } from '../lib/db'
 import type { Item, List } from '../lib/types'
-import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG, searchTV } from '../lib/tmdb'
-import type { TmdbTV } from '../lib/tmdb'
+import { searchMovies, type TmdbMovie, getMovie, TMDB_IMG, searchTV, type TmdbTV } from '../lib/tmdb'
 import { supabase } from '../lib/supabase'
 
 import Reel from './Reel'
@@ -190,7 +189,6 @@ const [hideDone, setHideDone] = useState(false)
 
 // suggestions locales
 type Suggestion = { t: string, u?: string|null }
-type TmdbTV = { id:number; name:string; poster_path?:string; first_air_date?:string }
 function readSug(): Suggestion[] {
   try { return JSON.parse(localStorage.getItem('course_sug')||'[]') } catch { return [] }
 }

@@ -28,13 +28,19 @@ export async function getMovie(id: number) {
 }
 
 export async function getTV(tvId: number){
-  const r = await fetch(`${BASE}/tv/${tvId}?language=fr-FR&api_key=${KEY_V3}`)
+  const url = `${BASE}/tv/${tvId}?language=fr-FR`
+  const r = await fetch(KEY_V3 ? `${url}&api_key=${KEY_V3}` : url, {
+    headers: TOKEN_V4 ? { Authorization: `Bearer ${TOKEN_V4}` } : undefined
+  })
   if (!r.ok) throw new Error('tmdb tv')
   return await r.json()
 }
 
 export async function getSeason(tvId: number, seasonNumber: number){
-  const r = await fetch(`${BASE}/tv/${tvId}/season/${seasonNumber}?language=fr-FR&api_key=${KEY_V3}`)
+  const url = `${BASE}/tv/${tvId}/season/${seasonNumber}?language=fr-FR`
+  const r = await fetch(KEY_V3 ? `${url}&api_key=${KEY_V3}` : url, {
+    headers: TOKEN_V4 ? { Authorization: `Bearer ${TOKEN_V4}` } : undefined
+  })
   if (!r.ok) throw new Error('tmdb season')
   return await r.json()
 }
@@ -56,8 +62,10 @@ export async function getAllEpisodes(tvId: number): Promise<{s:number;e:number}[
 }
 
 export async function searchTV(q: string){
-  const url = `${BASE}/search/tv?language=fr-FR&query=${encodeURIComponent(q)}&api_key=${KEY_V3}`
-  const r = await fetch(url)
+  const url = `${BASE}/search/tv?language=fr-FR&query=${encodeURIComponent(q)}`
+  const r = await fetch(KEY_V3 ? `${url}&api_key=${KEY_V3}` : url, {
+    headers: TOKEN_V4 ? { Authorization: `Bearer ${TOKEN_V4}` } : undefined
+  })
   if (!r.ok) throw new Error('tmdb search tv')
   return await r.json() as { results: Array<{ id:number; name:string; poster_path?:string; first_air_date?:string }> }
 }

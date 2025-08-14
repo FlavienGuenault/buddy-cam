@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getAllEpisodes, getSeason, getTV, TMDB_IMG } from '../lib/tmdb'
+import { getAllEpisodes, getSeason, getTV, TMDB_IMG, getEpisode } from '../lib/tmdb'
 import { listEpisodeViews, setEpisodeSeen, setSeasonSeen } from '../lib/db'
 import TVPoster from './TVPoster'
 
 type SeenSet = Set<string> // 'userId:s:e'
-
 function key(userId:string, s:number, e:number){ return `${userId}:${s}:${e}` }
 
 export default function SeriesSheet({
@@ -21,6 +20,20 @@ export default function SeriesSheet({
   const [tv, setTV] = useState<any>()
   const [episodes, setEpisodes] = useState<{s:number;e:number}[]>([])
   const [seen, setSeen] = useState<SeenSet>(new Set())
+
+  // 🔎 fiche épisode (modale)
+  const [epOpen, setEpOpen] = useState<{ s:number; e:number; data?: any } | null>(null)
+  const [loadingEp, setLoadingEp] = useState(false)
+  async function openEpisode(sn:number, ep:number){
+    setEpOpen({ s: sn, e: ep, data: undefined })
+    setLoadingEp(true)
+    try {
+      const data = await getEpisode(tmdbId, sn, ep)
+      setEpOpen({ s: sn, e: ep, data })
+    } finally {
+      setLoadingEp(false)
+    }
+  }
 
   useEffect(()=>{
     let alive=true
@@ -58,17 +71,28 @@ export default function SeriesSheet({
 
   return (
     <div className="fixed inset-0 z-[2200] grid place-items-center bg-black/40 p-3" onClick={onClose}>
-      <div className="card w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+      <div className="card w-full max-w-2xl max-h[85vh] max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
         {tv ? (
-          <div className="p-3 grid gap-3">
+          <div className="p-4">
+            {/* header enrichi */}
             <div className="flex gap-3">
               <TVPoster id={tmdbId} className="w-28 h-40 object-cover rounded-xl"/>
               <div className="flex-1">
                 <h3 className="text-2xl font-black text-candy-700">{tv.name}</h3>
-                <div className="text-sm opacity-70">{tv.first_air_date?.slice(0,4)} · {tv.number_of_seasons} saison(s)</div>
+                <div className="text-sm opacity-70">
+                  {tv.first_air_date?.slice(0,4) ?? '—'} · {tv.number_of_seasons} saison(s){tv.status ? ` · ${tv.status}` : ''}
+                </div>
+                {tv.genres?.length ? (
+                  <div className="text-xs opacity-70 mt-1">
+                    {tv.genres.map((g:any)=>g.name).join(' · ')}
+                  </div>
+                ) : null}
+                {tv.overview && (
+                  <div className="text-sm mt-2 line-clamp-3">{tv.overview}</div>
+                )}
 
                 {/* double barre de progression (toi / l’autre) */}
-                <div className="mt-2">
+                <div className="mt-3">
                   <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
                     <div className="h-full bg-amber-500" style={{ width: `${(meCount/Math.max(total,1))*100}%` }} />
                   </div>
@@ -85,7 +109,7 @@ export default function SeriesSheet({
             </div>
 
             {/* saisons */}
-            <div className="grid gap-3">
+            <div className="grid gap-3 mt-4">
               {seasons.map(([sn, eps])=>(
                 <SeasonRow key={sn}
                   sn={sn} eps={eps}
@@ -111,13 +135,63 @@ export default function SeriesSheet({
                       return nxt
                     })
                   }}
+                  onOpenEpisode={(e)=>openEpisode(sn, e)}
                 />
               ))}
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-3">
               <button className="btn btn-outline" onClick={onClose}>Fermer</button>
             </div>
+
+            {/* modale détails épisode */}
+            {epOpen && (
+              <div className="fixed inset-0 z-[2300] grid place-items-center bg-black/50 p-3" onClick={()=>setEpOpen(null)}>
+                <div className="card w-full max-w-md overflow-hidden" onClick={e=>e.stopPropagation()}>
+                  {loadingEp || !epOpen.data ? (
+                    <div className="p-6">Chargement…</div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {epOpen.data.still_path ? (
+                        <img
+                          src={TMDB_IMG(epOpen.data.still_path, 'w500')}
+                          alt=""
+                          className="w-full h-48 object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <div className="px-4 pt-2">
+                        <div className="text-xl font-bold">
+                          S{epOpen.s} · E{epOpen.e}{epOpen.data.name ? ` — ${epOpen.data.name}` : ''}
+                        </div>
+                        <div className="text-sm opacity-70 mt-1">
+                          {epOpen.data.air_date || '—'}{epOpen.data.runtime ? ` · ${epOpen.data.runtime} min` : ''}
+                        </div>
+                        {epOpen.data.overview && (
+                          <div className="text-sm mt-2 whitespace-pre-wrap">{epOpen.data.overview}</div>
+                        )}
+                      </div>
+                      <div className="flex justify-end gap-2 px-4 pb-4">
+                        <button className="btn btn-outline" onClick={()=>setEpOpen(null)}>Fermer</button>
+                        <button className="btn"
+                          onClick={async ()=>{
+                            await setEpisodeSeen(itemId, epOpen.s, epOpen.e, true)
+                            setSeen(prev => {
+                              const nxt = new Set(prev)
+                              nxt.add(key(meId, epOpen.s, epOpen.e))
+                              return nxt
+                            })
+                            setEpOpen(null)
+                          }}
+                        >
+                          Marquer “vu”
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (<div className="p-6">Chargement…</div>)}
       </div>
@@ -126,7 +200,7 @@ export default function SeriesSheet({
 }
 
 function SeasonRow({
-  sn, eps, checkedMe, checkedPartner, onToggle, onToggleAll
+  sn, eps, checkedMe, checkedPartner, onToggle, onToggleAll, onOpenEpisode
 }:{
   sn:number
   eps:number[]
@@ -134,6 +208,7 @@ function SeasonRow({
   checkedPartner:Set<number>
   onToggle:(e:number, on:boolean)=>void|Promise<void>
   onToggleAll:(on:boolean)=>void|Promise<void>
+  onOpenEpisode:(e:number)=>void
 }){
   const allOn = checkedMe.size === eps.length
   return (
@@ -146,14 +221,23 @@ function SeasonRow({
       </div>
       <div className="flex flex-wrap gap-2 mt-2">
         {eps.map(e => (
-          <button key={e}
-            className={`px-2 py-1 rounded-lg border text-sm ${checkedMe.has(e)?'bg-amber-100 border-amber-300':'bg-white'}`}
-            onClick={()=>onToggle(e, !checkedMe.has(e))}
-            title={`Épisode ${e}`}
-          >
-            E{e}
-            {checkedPartner.has(e) && <span className="ml-1 text-[10px] px-1 rounded bg-rose-900 text-white">Cam</span>}
-          </button>
+          <div key={e} className="flex items-center gap-2">
+            <button
+              className={`px-2 py-1 rounded-lg border text-sm ${checkedMe.has(e)?'bg-amber-100 border-amber-300':'bg-white'}`}
+              onClick={()=>onToggle(e, !checkedMe.has(e))}
+              title="Marquer vu / non vu"
+            >
+              E{e}
+              {checkedPartner.has(e) && <span className="ml-1 text-[10px] px-1 rounded bg-rose-900 text-white">Cam</span>}
+            </button>
+            <button
+              className="text-xs underline opacity-80 hover:opacity-100"
+              onClick={()=>onOpenEpisode(e)}
+              title="Détails épisode"
+            >
+              détails
+            </button>
+          </div>
         ))}
       </div>
     </div>

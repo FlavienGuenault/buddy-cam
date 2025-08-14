@@ -70,6 +70,17 @@ export async function searchTV(q: string){
   return await r.json() as { results: Array<{ id:number; name:string; poster_path?:string; first_air_date?:string }> }
 }
 
+export async function getEpisode(tvId: number, seasonNumber: number, episodeNumber: number, signal?: AbortSignal){
+  const url = `${BASE}/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?language=fr-FR`
+  const res = await fetch(KEY_V3 ? `${url}&api_key=${KEY_V3}` : url, {
+    headers: TOKEN_V4 ? { Authorization: `Bearer ${TOKEN_V4}` } : undefined,
+    signal
+  })
+  if (!res.ok) throw new Error('TMDb episode error ' + res.status)
+  return res.json() as Promise<any> // contient `still_path`, `name`, `overview`, `air_date`, `runtime`, etc.
+}
+
+
 export type TmdbTV = {
   id: number
   name: string
